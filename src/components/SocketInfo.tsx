@@ -20,7 +20,7 @@ interface Socket {
   contactCountOver70Pin1: boolean | string | number;
   pogoPinPnPin1: string;
   socketPnPin1: string;
-  usedFag: string;
+  usedFlag: string;
   contactCountPin2: number;
   lifeCountPin2: number;
   contactLimitPin2: number;
@@ -95,7 +95,7 @@ export default function SocketInfo({ isAdmin }: { isAdmin: boolean }) {
     { key: 'contactLimitPcb', label: 'Contact Limit - PCB' },
     { key: 'pnPcb', label: 'P/N - PCB' },
     { key: 'contactCountOver70Pcb', label: 'Contact count over 70% - PCB' },
-    { key: 'usedFag', label: 'Used Fag' },
+    { key: 'usedFlag', label: 'Used Flag' },
   ];
 
   return (

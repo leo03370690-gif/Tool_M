@@ -37,10 +37,10 @@ const TEMPLATES: Record<string, string[]> = {
     'contactCountOver70Pin1', 'pogoPinPnPin1', 'socketPnPin1', 'usedFag',
     'contactCountPin2', 'lifeCountPin2', 'contactLimitPin2', 'contactCountOver70Pin2',
     'pogoPinPnPin2', 'contactCountPcb', 'lifeCountPcb', 'contactLimitPcb',
-    'contactCountOver70Pcb', 'pnPcb'
+    'contactCountOver70Pcb', 'pnPcb', 'usedFlag'
   ],
   changeKits: [
-    'facility', 'kind', 'toolsId', 'packageSize', 'changeKitGroup', 'status', 'idleTime'
+    'facility', 'kind', 'toolsId', 'packageSize', 'changeKitGroup', 'status', 'idleTime', 'location'
   ],
   pogoPins: [
     'facility', 'pinPn', 'qty'
@@ -189,7 +189,21 @@ export default function DataManagement() {
       'contactCountPin1': ['pogopincontactcount', 'contactcountpin1', 'down'],
       'contactLimitPin1': ['pogopincontactlimit', 'contactlimitpin1'],
       'socketPnPin1': ['socketpn', 'socketpnpin1'],
-      'contactCountOver70Pin1': ['contactcountover70', 'contactcountover70pin1']
+      'contactCountOver70Pin1': ['contactcountover70', 'contactcountover70pin1'],
+      'package': ['pkg', 'package'],
+      'pinBall': ['pinball', 'ball', 'balls'],
+      'project': ['project', 'proj'],
+      'usedFlag': ['usedflag', 'flag', 'usedfag', 'usedfag'],
+      'contactCountPin2': ['contactcountpin2'],
+      'lifeCountPin2': ['lifecountpin2'],
+      'contactLimitPin2': ['contactlimitpin2'],
+      'contactCountOver70Pin2': ['contactcountover70pin2'],
+      'pogoPinPnPin2': ['pogopin1pn2', 'pogopinpn2', 'pin2pn'],
+      'contactCountPcb': ['contactcountpcb'],
+      'lifeCountPcb': ['lifecountpcb'],
+      'contactLimitPcb': ['contactlimitpcb'],
+      'contactCountOver70Pcb': ['contactcountover70pcb'],
+      'pnPcb': ['pnpcb', 'pcbpn']
     };
 
     // Find the header row
@@ -354,11 +368,19 @@ export default function DataManagement() {
               const expectedSheetName = Object.keys(SHEET_MAPPING).find(key => SHEET_MAPPING[key] === targetCollection);
               if (expectedSheetName) {
                 const normalizedExpected = expectedSheetName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                for (const sheetName of workbook.SheetNames) {
-                  const normalizedSheetName = sheetName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                  if (normalizedSheetName === normalizedExpected || normalizedSheetName.includes(normalizedExpected) || normalizedExpected.includes(normalizedSheetName)) {
-                    targetSheetName = sheetName;
-                    break;
+                
+                // 1. Try exact match first
+                const exactMatch = workbook.SheetNames.find(name => name.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedExpected);
+                if (exactMatch) {
+                  targetSheetName = exactMatch;
+                } else {
+                  // 2. Try fuzzy match
+                  for (const sheetName of workbook.SheetNames) {
+                    const normalizedSheetName = sheetName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (normalizedSheetName.includes(normalizedExpected) || normalizedExpected.includes(normalizedSheetName)) {
+                      targetSheetName = sheetName;
+                      break;
+                    }
                   }
                 }
               }

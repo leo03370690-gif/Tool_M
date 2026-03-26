@@ -67,15 +67,18 @@ export default function LoadBoardInfo({ isAdmin }: { isAdmin: boolean }) {
   );
 
   const stats = loadBoards.reduce((acc, lb) => {
-    // Exclude if Location is SNI
-    if ((lb.location || '').toUpperCase() === 'SNI') return acc;
+    // Only count if Location equals Facility
+    const location = (lb.location || '').trim().toUpperCase();
+    const facility = (lb.facility || '').trim().toUpperCase();
+    
+    if (location !== facility || !facility) return acc;
 
-    const facility = lb.facility || 'Unknown';
+    const displayFacility = lb.facility || 'Unknown';
     const group = lb.lbGroup || 'Unknown';
     
-    if (!acc[facility]) acc[facility] = {};
-    if (!acc[facility][group]) acc[facility][group] = 0;
-    acc[facility][group]++;
+    if (!acc[displayFacility]) acc[displayFacility] = {};
+    if (!acc[displayFacility][group]) acc[displayFacility][group] = 0;
+    acc[displayFacility][group]++;
     
     return acc;
   }, {} as Record<string, Record<string, number>>);
