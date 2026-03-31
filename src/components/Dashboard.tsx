@@ -30,23 +30,23 @@ import UserManagement from './UserManagement';
 import SettingsTab from './Settings';
 import DataManagement from './DataManagement';
 import AuditLogs from './AuditLogs';
-import Overview from './Overview';
 
 interface DashboardProps {
   user: FirebaseUser;
   role: string | null;
+  selectedFacility: string;
+  onBackToFacility: () => void;
 }
 
-type Tab = 'overview' | 'product' | 'socket' | 'change-kit' | 'pogo-pin' | 'life-time' | 'load-board' | 'users' | 'settings' | 'data-management' | 'audit-logs';
+type Tab = 'product' | 'socket' | 'change-kit' | 'pogo-pin' | 'life-time' | 'load-board' | 'users' | 'settings' | 'data-management' | 'audit-logs';
 
-export default function Dashboard({ user, role }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+export default function Dashboard({ user, role, selectedFacility, onBackToFacility }: DashboardProps) {
+  const [activeTab, setActiveTab] = useState<Tab>('product');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const isAdmin = role === 'admin';
 
   const menuItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard, color: 'text-zinc-500' },
     { id: 'product', label: 'Product Info', icon: Box, color: 'text-blue-500' },
     { id: 'socket', label: 'Socket Info', icon: Cpu, color: 'text-purple-500' },
     { id: 'change-kit', label: 'Change Kit', icon: Wrench, color: 'text-orange-500' },
@@ -82,7 +82,7 @@ export default function Dashboard({ user, role }: DashboardProps) {
               <div className="h-8 w-8 rounded bg-brand-primary flex items-center justify-center">
                 <Cpu className="h-5 w-5 text-white" />
               </div>
-              <h2 className="font-serif text-xl font-bold italic tracking-tight">Tooling Master</h2>
+              <h2 className="font-serif text-xl font-bold italic tracking-tight">Tooling Matrix</h2>
             </motion.div>
           ) : (
             <div className="mx-auto h-8 w-8 rounded bg-brand-primary flex items-center justify-center">
@@ -162,6 +162,18 @@ export default function Dashboard({ user, role }: DashboardProps) {
                 {menuItems.find(i => i.id === activeTab)?.label}
               </h1>
             </div>
+            <div className="h-6 w-px bg-zinc-200 mx-2" />
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-brand-primary bg-brand-primary/10 px-3 py-1 rounded-full">
+                Facility: {selectedFacility}
+              </span>
+              <button 
+                onClick={onBackToFacility}
+                className="text-xs font-bold text-zinc-500 hover:text-zinc-900 transition-colors px-3 py-1 bg-white border border-zinc-200 rounded-full shadow-sm"
+              >
+                Change
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-6">
@@ -197,13 +209,12 @@ export default function Dashboard({ user, role }: DashboardProps) {
               transition={{ duration: 0.2 }}
               className="rounded-3xl bg-white p-10 card-shadow ring-1 ring-black/5 min-h-[calc(100vh-10rem)]"
             >
-              {activeTab === 'overview' && <Overview />}
-              {activeTab === 'product' && <ProductInfo isAdmin={isAdmin} />}
-              {activeTab === 'socket' && <SocketInfo isAdmin={isAdmin} />}
-              {activeTab === 'change-kit' && <ChangeKitInfo isAdmin={isAdmin} />}
-              {activeTab === 'pogo-pin' && <PogoPinInfo isAdmin={isAdmin} />}
-              {activeTab === 'life-time' && <LifeTimeInfo isAdmin={isAdmin} />}
-              {activeTab === 'load-board' && <LoadBoardInfo isAdmin={isAdmin} />}
+              {activeTab === 'product' && <ProductInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+              {activeTab === 'socket' && <SocketInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+              {activeTab === 'change-kit' && <ChangeKitInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+              {activeTab === 'pogo-pin' && <PogoPinInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+              {activeTab === 'life-time' && <LifeTimeInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+              {activeTab === 'load-board' && <LoadBoardInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
               {activeTab === 'data-management' && <DataManagement />}
               {activeTab === 'settings' && <SettingsTab />}
               {activeTab === 'users' && <UserManagement />}

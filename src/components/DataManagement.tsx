@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from '../firebase';
-import { collection, getDocs, writeBatch, doc, query, getCountFromServer } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, query, getCountFromServer, where } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 import { Upload, Trash2, Loader2, AlertTriangle, CheckCircle2, FileSpreadsheet, DatabaseBackup, Download, Info } from 'lucide-react';
 import { cn, getFirestoreErrorMessage } from '../lib/utils';
@@ -33,7 +33,7 @@ const TEMPLATES: Record<string, string[]> = {
     'socketName1', 'socketName2'
   ],
   sockets: [
-    'facility', 'toolsId', 'package', 'pinBall', 'packageSize', 'project', 'status',
+    'facility', 'location', 'toolsId', 'package', 'pinBall', 'packageSize', 'project', 'status',
     'contactCountPin1', 'lifeCountPin1', 'contactLimitPin1', 'socketGroupPin1',
     'contactCountOver70Pin1', 'pogoPinPnPin1', 'socketPnPin1', 'usedFag',
     'contactCountPin2', 'lifeCountPin2', 'contactLimitPin2', 'contactCountOver70Pin2',
@@ -67,6 +67,7 @@ interface ModalState {
 
 export default function DataManagement() {
   const [clearTarget, setClearTarget] = useState<string>('all');
+  const [deleteFacility, setDeleteFacility] = useState<string>('');
   const [importMode, setImportMode] = useState<'auto' | 'specific'>('auto');
   const [targetCollection, setTargetCollection] = useState<string>('products');
   const [clearBeforeImport, setClearBeforeImport] = useState<boolean>(false);
@@ -110,6 +111,35 @@ export default function DataManagement() {
         count = 0;
       }
     }
+    if (count > 0) {
+      batches.push(batch.commit());
+    }
+    await Promise.all(batches);
+    return totalDeleted;
+  };
+
+  const clearByFacility = async (facilityName: string) => {
+    const batches = [];
+    let batch = writeBatch(db);
+    let count = 0;
+    let totalDeleted = 0;
+
+    for (const col of COLLECTIONS) {
+      const q = query(collection(db, col.id), where('facility', '==', facilityName));
+      const snapshot = await getDocs(q);
+      
+      for (const document of snapshot.docs) {
+        batch.delete(document.ref);
+        count++;
+        totalDeleted++;
+        if (count === 490) {
+          batches.push(batch.commit());
+          batch = writeBatch(db);
+          count = 0;
+        }
+      }
+    }
+    
     if (count > 0) {
       batches.push(batch.commit());
     }
@@ -187,8 +217,9 @@ export default function DataManagement() {
       'availableQty': ['available', 'availqty'],
       'sendBackDate': ['sendback', 'returndate'],
       'targetReturnDate': ['targetreturn', 'targetdate'],
-      'contactCountPin1': ['pogopincontactcount', 'contactcountpin1', 'down'],
+      'contactCountPin1': ['pogopincontactcount', 'contactcountpin1', 'down', 'touchdown'],
       'contactLimitPin1': ['pogopincontactlimit', 'contactlimitpin1'],
+      'socketGroupPin1': ['socketname', 'socketgroup', 'socketgrouppin1'],
       'socketPnPin1': ['socketpn', 'socketpnpin1'],
       'contactCountOver70Pin1': ['contactcountover70', 'contactcountover70pin1'],
       'package': ['pkg', 'package'],
@@ -380,14 +411,6 @@ export default function DataManagement() {
               estimatedRows += (range.e.r - range.s.r);
             });
 
-            if (estimatedRows > 5000) {
-              const proceed = window.confirm(`Warning: This file contains approximately ${estimatedRows} rows. Importing this may consume a significant portion of your daily Firestore quota. Do you want to continue?`);
-              if (!proceed) {
-                setLoading(false);
-                return;
-              }
-            }
-
             if (importMode === 'specific') {
               // Specific Page Mode: Try to find a matching sheet, otherwise use the first sheet
               let targetSheetName = workbook.SheetNames[0]; // Default to first sheet
@@ -576,6 +599,60 @@ export default function DataManagement() {
           setModal({
             isOpen: true,
             title: 'Clear Failed',
+            message: getFirestoreErrorMessage(err),
+            type: 'danger',
+            onConfirm: closeModal,
+            confirmText: 'OK'
+          });
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
+  const handleClearByFacilityClick = async () => {
+    if (!deleteFacility.trim()) {
+      setModal({
+        isOpen: true,
+        title: 'Error',
+        message: 'Please enter a facility name to delete.',
+        type: 'danger',
+        onConfirm: closeModal,
+        confirmText: 'OK'
+      });
+      return;
+    }
+
+    setModal({
+      isOpen: true,
+      title: 'Confirm Delete by Facility',
+      message: `Are you absolutely sure you want to delete ALL data for facility "${deleteFacility}" across all collections? This action CANNOT be undone.`,
+      type: 'danger',
+      confirmText: 'Yes, Delete Data',
+      onCancel: closeModal,
+      onConfirm: async () => {
+        closeModal();
+        setLoading(true);
+        try {
+          const totalDeleted = await clearByFacility(deleteFacility);
+
+          await logAuditAction('Delete by Facility', `Deleted ${totalDeleted} records for facility ${deleteFacility}`);
+
+          setModal({
+            isOpen: true,
+            title: 'Delete Successful',
+            message: `Successfully deleted ${totalDeleted} records for facility "${deleteFacility}".`,
+            type: 'success',
+            onConfirm: closeModal,
+            confirmText: 'OK'
+          });
+          setDeleteFacility('');
+        } catch (err: any) {
+          console.error(err);
+          setModal({
+            isOpen: true,
+            title: 'Delete Failed',
             message: getFirestoreErrorMessage(err),
             type: 'danger',
             onConfirm: closeModal,
@@ -790,6 +867,32 @@ export default function DataManagement() {
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
               {loading ? 'Processing...' : 'Clear Selected Data'}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-8 pt-8 border-t border-zinc-100 grid gap-8 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
+              Delete by Facility
+            </label>
+            <input
+              type="text"
+              value={deleteFacility}
+              onChange={(e) => setDeleteFacility(e.target.value)}
+              placeholder="Enter Facility name..."
+              className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/10 transition-all"
+            />
+          </div>
+
+          <div className="flex items-end">
+            <button
+              onClick={handleClearByFacilityClick}
+              disabled={loading || !deleteFacility.trim()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-orange-700 disabled:opacity-50 shadow-lg shadow-orange-600/20"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {loading ? 'Processing...' : 'Delete Facility Data'}
             </button>
           </div>
         </div>

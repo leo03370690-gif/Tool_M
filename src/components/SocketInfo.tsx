@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { Plus, Trash2, Edit2, Check, X, Search, MoreHorizontal } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Search, MoreHorizontal, BarChart2, List } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Socket {
   id: string;
   facility: string;
+  location: string;
   toolsId: string;
   package: string;
   pinBall: string;
@@ -34,17 +35,22 @@ interface Socket {
   pnPcb: string;
 }
 
-export default function SocketInfo({ isAdmin }: { isAdmin: boolean }) {
+export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
   const [sockets, setSockets] = useState<Socket[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'stats'>('list');
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const q = query(collection(db, 'sockets'), orderBy('toolsId'));
+    const q = query(collection(db, 'sockets'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Socket));
+      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Socket));
+      if (selectedFacility !== 'ALL') {
+        data = data.filter(s => s.facility === selectedFacility);
+      }
+      data.sort((a, b) => (a.toolsId || '').localeCompare(b.toolsId || ''));
       setSockets(data);
       setLoading(false);
     }, (error) => {
@@ -52,7 +58,7 @@ export default function SocketInfo({ isAdmin }: { isAdmin: boolean }) {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [selectedFacility]);
 
   const handleUpdate = async (id: string, data: Partial<Socket>) => {
     await updateDoc(doc(db, 'sockets', id), data);
@@ -71,8 +77,26 @@ export default function SocketInfo({ isAdmin }: { isAdmin: boolean }) {
     (s.project || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const stats = sockets.reduce((acc, socket) => {
+    // Only count if Facility equals Location
+    const facility = (socket.facility || '').trim().toUpperCase();
+    const location = (socket.location || '').trim().toUpperCase();
+    
+    if (facility !== location || !location) return acc;
+
+    const displayLocation = socket.location || 'Unknown';
+    const group = socket.socketGroupPin1 || 'Unknown';
+    
+    if (!acc[displayLocation]) acc[displayLocation] = {};
+    if (!acc[displayLocation][group]) acc[displayLocation][group] = 0;
+    acc[displayLocation][group]++;
+    
+    return acc;
+  }, {} as Record<string, Record<string, number>>);
+
   const columns = [
     { key: 'facility', label: 'Facility' },
+    { key: 'location', label: 'Location' },
     { key: 'toolsId', label: 'Tools ID' },
     { key: 'package', label: 'PACKAGE' },
     { key: 'pinBall', label: 'PIN BALL' },
@@ -117,6 +141,28 @@ export default function SocketInfo({ isAdmin }: { isAdmin: boolean }) {
               className="w-64 rounded-xl border border-zinc-200 bg-zinc-50/50 pl-10 pr-4 py-2.5 text-sm focus:border-brand-primary focus:bg-white focus:outline-none transition-all"
             />
           </div>
+          <div className="flex rounded-xl border border-zinc-200 bg-zinc-50/50 p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition-all",
+                viewMode === 'list' ? "bg-white text-brand-primary shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+              )}
+            >
+              <List className="h-3.5 w-3.5" />
+              LIST
+            </button>
+            <button
+              onClick={() => setViewMode('stats')}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition-all",
+                viewMode === 'stats' ? "bg-white text-brand-primary shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+              )}
+            >
+              <BarChart2 className="h-3.5 w-3.5" />
+              STATS
+            </button>
+          </div>
           {isAdmin && (
             <button 
               onClick={async () => {
@@ -132,9 +178,17 @@ export default function SocketInfo({ isAdmin }: { isAdmin: boolean }) {
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-100 bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
+      <AnimatePresence mode="wait">
+        {viewMode === 'list' ? (
+          <motion.div 
+            key="list"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="relative overflow-hidden rounded-2xl border border-zinc-100 bg-white"
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="bg-zinc-50/50">
                 {columns.map(col => (
@@ -211,7 +265,54 @@ export default function SocketInfo({ isAdmin }: { isAdmin: boolean }) {
             </tbody>
           </table>
         </div>
-      </div>
+      </motion.div>
+        ) : (
+          <motion.div 
+            key="stats"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="grid gap-8 md:grid-cols-2 xl:grid-cols-3"
+          >
+            {Object.entries(stats).map(([location, groups], idx) => (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.1 }}
+                key={location} 
+                className="rounded-3xl border border-zinc-100 bg-white card-shadow overflow-hidden"
+              >
+                <div className="bg-zinc-50/50 px-6 py-4 border-b border-zinc-100">
+                  <h3 className="font-serif italic text-xl text-zinc-900">{location}</h3>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-4">
+                    {Object.entries(groups).map(([group, count]) => (
+                      <div key={group} className="flex items-center justify-between group">
+                        <span className="text-sm text-zinc-500 group-hover:text-brand-primary transition-colors">{group}</span>
+                        <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-900">
+                          {count}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="mt-6 pt-6 border-t border-zinc-100 flex items-center justify-between">
+                      <span className="text-xs font-bold text-zinc-900 uppercase tracking-widest">Total Count</span>
+                      <span className="rounded-full bg-brand-primary px-4 py-1.5 text-xs font-bold text-white shadow-lg shadow-black/10">
+                        {Object.values(groups).reduce((a, b) => a + b, 0)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+            {Object.keys(stats).length === 0 && (
+              <div className="col-span-full py-12 text-center text-zinc-500">
+                No statistics available (Facility must equal Location).
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>

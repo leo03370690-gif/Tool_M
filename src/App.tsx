@@ -5,8 +5,7 @@ import { auth, db } from './firebase';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
-import { Loader2 } from 'lucide-react';
-
+import FacilitySelection from './components/FacilitySelection';
 import { Loader2, AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -15,6 +14,7 @@ export default function App() {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const [selectedFacility, setSelectedFacility] = useState<string | null>(null);
 
   useEffect(() => {
     let unsubscribeDoc: (() => void) | null = null;
@@ -127,7 +127,22 @@ export default function App() {
           />
           <Route 
             path="/*" 
-            element={user ? <Dashboard user={user} role={role} /> : <Navigate to="/login" />} 
+            element={
+              user ? (
+                selectedFacility ? (
+                  <Dashboard 
+                    user={user} 
+                    role={role} 
+                    selectedFacility={selectedFacility} 
+                    onBackToFacility={() => setSelectedFacility(null)} 
+                  />
+                ) : (
+                  <FacilitySelection onSelect={setSelectedFacility} />
+                )
+              ) : (
+                <Navigate to="/login" />
+              )
+            } 
           />
         </Routes>
       </Router>

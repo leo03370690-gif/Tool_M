@@ -116,7 +116,7 @@ export default function Login() {
                 <ShieldCheck className="h-10 w-10 text-white" />
               </div>
             </div>
-            <h1 className="font-serif text-4xl italic tracking-tight">Tooling Master</h1>
+            <h1 className="font-serif text-4xl italic tracking-tight">Tooling Matrix</h1>
             <p className="mt-3 text-[10px] text-zinc-400 uppercase tracking-[0.3em] font-bold">
               Management System v2.0
             </p>

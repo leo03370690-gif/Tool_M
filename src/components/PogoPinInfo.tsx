@@ -12,22 +12,26 @@ interface PogoPin {
   qty: number;
 }
 
-export default function PogoPinInfo({ isAdmin }: { isAdmin: boolean }) {
+export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
   const [pins, setPins] = useState<PogoPin[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
 
   useEffect(() => {
-    const q = query(collection(db, 'pogoPins'), orderBy('pinPn'));
+    const q = query(collection(db, 'pogoPins'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PogoPin));
+      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PogoPin));
+      if (selectedFacility !== 'ALL') {
+        data = data.filter(p => p.facility === selectedFacility);
+      }
+      data.sort((a, b) => (a.pinPn || '').localeCompare(b.pinPn || ''));
       setPins(data);
     }, (error) => {
       console.error("Error fetching pogo pins:", error);
     });
     return () => unsubscribe();
-  }, []);
+  }, [selectedFacility]);
 
   const handleUpdate = async (id: string, data: Partial<PogoPin>) => {
     await updateDoc(doc(db, 'pogoPins', id), data);

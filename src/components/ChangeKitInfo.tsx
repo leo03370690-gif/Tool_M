@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 interface ChangeKit {
   id: string;
   facility: string;
+  location: string;
   kind: string;
   toolsId: string;
   packageSize: string;
@@ -16,7 +17,7 @@ interface ChangeKit {
   idleTime: string;
 }
 
-export default function ChangeKitInfo({ isAdmin }: { isAdmin: boolean }) {
+export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
   const [kits, setKits] = useState<ChangeKit[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,15 +25,19 @@ export default function ChangeKitInfo({ isAdmin }: { isAdmin: boolean }) {
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
 
   useEffect(() => {
-    const q = query(collection(db, 'changeKits'), orderBy('toolsId'));
+    const q = query(collection(db, 'changeKits'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChangeKit));
+      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChangeKit));
+      if (selectedFacility !== 'ALL') {
+        data = data.filter(k => k.facility === selectedFacility);
+      }
+      data.sort((a, b) => (a.toolsId || '').localeCompare(b.toolsId || ''));
       setKits(data);
     }, (error) => {
       console.error("Error fetching change kits:", error);
     });
     return () => unsubscribe();
-  }, []);
+  }, [selectedFacility]);
 
   const handleUpdate = async (id: string, data: Partial<ChangeKit>) => {
     await updateDoc(doc(db, 'changeKits', id), data);
@@ -52,24 +57,25 @@ export default function ChangeKitInfo({ isAdmin }: { isAdmin: boolean }) {
   );
 
   const stats = kits.reduce((acc, kit) => {
-    // Only count if Status equals Facility
-    const status = (kit.status || '').trim().toUpperCase();
+    // Only count if Facility equals Location
     const facility = (kit.facility || '').trim().toUpperCase();
+    const location = (kit.location || '').trim().toUpperCase();
     
-    if (status !== facility || !facility) return acc;
+    if (facility !== location || !location) return acc;
 
-    const displayFacility = kit.facility || 'Unknown';
+    const displayLocation = kit.location || 'Unknown';
     const group = kit.changeKitGroup || 'Unknown';
     
-    if (!acc[displayFacility]) acc[displayFacility] = {};
-    if (!acc[displayFacility][group]) acc[displayFacility][group] = 0;
-    acc[displayFacility][group]++;
+    if (!acc[displayLocation]) acc[displayLocation] = {};
+    if (!acc[displayLocation][group]) acc[displayLocation][group] = 0;
+    acc[displayLocation][group]++;
     
     return acc;
   }, {} as Record<string, Record<string, number>>);
 
   const columns = [
     { key: 'facility', label: 'Facility' },
+    { key: 'location', label: 'Location' },
     { key: 'kind', label: 'Kind' },
     { key: 'toolsId', label: 'Tools ID' },
     { key: 'packageSize', label: 'PACKAGE SIZE' },
@@ -219,16 +225,16 @@ export default function ChangeKitInfo({ isAdmin }: { isAdmin: boolean }) {
             exit={{ opacity: 0, x: -20 }}
             className="grid gap-8 md:grid-cols-2 xl:grid-cols-3"
           >
-            {Object.entries(stats).map(([facility, groups], idx) => (
+            {Object.entries(stats).map(([location, groups], idx) => (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.1 }}
-                key={facility} 
+                key={location} 
                 className="rounded-3xl border border-zinc-100 bg-white card-shadow overflow-hidden"
               >
                 <div className="bg-zinc-50/50 px-6 py-4 border-b border-zinc-100">
-                  <h3 className="font-serif italic text-xl text-zinc-900">{facility}</h3>
+                  <h3 className="font-serif italic text-xl text-zinc-900">{location}</h3>
                 </div>
                 <div className="p-6">
                   <div className="space-y-4">
@@ -252,7 +258,7 @@ export default function ChangeKitInfo({ isAdmin }: { isAdmin: boolean }) {
             ))}
             {Object.keys(stats).length === 0 && (
               <div className="col-span-full py-12 text-center text-zinc-500">
-                No statistics available (Status must equal Facility).
+                No statistics available (Facility must equal Location).
               </div>
             )}
           </motion.div>

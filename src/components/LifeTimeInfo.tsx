@@ -16,22 +16,26 @@ interface LifeTime {
   remark: string;
 }
 
-export default function LifeTimeInfo({ isAdmin }: { isAdmin: boolean }) {
+export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
   const [records, setRecords] = useState<LifeTime[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
 
   useEffect(() => {
-    const q = query(collection(db, 'lifeTimes'), orderBy('socketGroup'));
+    const q = query(collection(db, 'lifeTimes'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LifeTime));
+      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LifeTime));
+      if (selectedFacility !== 'ALL') {
+        data = data.filter(r => r.facility === selectedFacility);
+      }
+      data.sort((a, b) => (a.socketGroup || '').localeCompare(b.socketGroup || ''));
       setRecords(data);
     }, (error) => {
       console.error("Error fetching life times:", error);
     });
     return () => unsubscribe();
-  }, []);
+  }, [selectedFacility]);
 
   const handleUpdate = async (id: string, data: Partial<LifeTime>) => {
     await updateDoc(doc(db, 'lifeTimes', id), data);

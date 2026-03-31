@@ -19,7 +19,7 @@ interface LoadBoard {
   targetReturnDate: string;
 }
 
-export default function LoadBoardInfo({ isAdmin }: { isAdmin: boolean }) {
+export default function LoadBoardInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
   const [loadBoards, setLoadBoards] = useState<LoadBoard[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -32,7 +32,11 @@ export default function LoadBoardInfo({ isAdmin }: { isAdmin: boolean }) {
   useEffect(() => {
     const q = query(collection(db, 'loadBoards'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LoadBoard));
+      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LoadBoard));
+      if (selectedFacility !== 'ALL') {
+        data = data.filter(lb => lb.facility === selectedFacility);
+      }
+      data.sort((a, b) => (a.projectName || '').localeCompare(b.projectName || ''));
       setLoadBoards(data);
       setLoading(false);
     }, (error) => {
@@ -40,7 +44,7 @@ export default function LoadBoardInfo({ isAdmin }: { isAdmin: boolean }) {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [selectedFacility]);
 
   const handleAdd = async () => {
     if (!newLoadBoard.projectName) return;

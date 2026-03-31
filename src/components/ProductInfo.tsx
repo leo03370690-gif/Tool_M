@@ -27,19 +27,24 @@ interface Product {
   socketName2: string;
 }
 
-export default function ProductInfo({ isAdmin }: { isAdmin: boolean }) {
+export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
+  const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
 
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
 
   useEffect(() => {
-    const q = query(collection(db, 'products'), orderBy('device'));
+    const q = query(collection(db, 'products'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+      if (selectedFacility !== 'ALL') {
+        data = data.filter(p => p.facility === selectedFacility);
+      }
+      data.sort((a, b) => (a.device || '').localeCompare(b.device || ''));
       setProducts(data);
       setLoading(false);
     }, (error) => {
@@ -47,7 +52,7 @@ export default function ProductInfo({ isAdmin }: { isAdmin: boolean }) {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [selectedFacility]);
 
   const handleAdd = async () => {
     if (!newProduct.device) return;
@@ -187,11 +192,15 @@ export default function ProductInfo({ isAdmin }: { isAdmin: boolean }) {
                             className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all"
                             onBlur={(e) => handleUpdate(product.id, { [col.key]: e.target.value })}
                           />
+                        ) : col.key === 'device' ? (
+                          <button
+                            onClick={() => setSelectedDevice(product.device as string)}
+                            className="font-bold text-brand-primary hover:underline"
+                          >
+                            {product.device}
+                          </button>
                         ) : (
-                          <span className={cn(
-                            "font-medium",
-                            col.key === 'device' ? "text-brand-primary font-bold" : "text-zinc-500"
-                          )}>
+                          <span className="font-medium text-zinc-500">
                             {product[col.key as keyof Product]}
                           </span>
                         )}
@@ -260,6 +269,131 @@ export default function ProductInfo({ isAdmin }: { isAdmin: boolean }) {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Device Details Modal */}
+      <AnimatePresence>
+        {selectedDevice && (
+          <DeviceDetailsModal
+            device={selectedDevice}
+            products={products.filter(p => p.device === selectedDevice)}
+            onClose={() => setSelectedDevice(null)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function DeviceDetailsModal({ device, products, onClose }: { device: string, products: Product[], onClose: () => void }) {
+  const [socketsData, setSocketsData] = useState<any[]>([]);
+  const [kitsData, setKitsData] = useState<any[]>([]);
+  const [loadBoardsData, setLoadBoardsData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubSockets = onSnapshot(collection(db, 'sockets'), (snapshot) => {
+      setSocketsData(snapshot.docs.map(doc => doc.data()));
+    });
+    const unsubKits = onSnapshot(collection(db, 'changeKits'), (snapshot) => {
+      setKitsData(snapshot.docs.map(doc => doc.data()));
+    });
+    const unsubLoadBoards = onSnapshot(collection(db, 'loadBoards'), (snapshot) => {
+      setLoadBoardsData(snapshot.docs.map(doc => doc.data()));
+    });
+
+    const timer = setTimeout(() => setLoading(false), 500);
+
+    return () => {
+      unsubSockets();
+      unsubKits();
+      unsubLoadBoards();
+      clearTimeout(timer);
+    };
+  }, []);
+
+  const insertions = Array.from(new Set(products.map(p => p.insertion).filter(Boolean)));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col rounded-[2rem] bg-white shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-zinc-100 p-6">
+          <div className="space-y-1">
+            <h3 className="text-2xl font-serif italic text-zinc-900">Device: {device}</h3>
+            <p className="text-xs text-zinc-400 uppercase tracking-widest font-bold">Insertion Details & Tooling Counts</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="flex h-40 items-center justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-primary border-t-transparent"></div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {insertions.length === 0 ? (
+                <p className="text-center text-zinc-500 py-8">No insertions found for this device.</p>
+              ) : (
+                insertions.map(insertion => {
+                  const insertionProducts = products.filter(p => p.insertion === insertion);
+                  
+                  const socketGroups = new Set(insertionProducts.flatMap(p => [p.socketName1, p.socketName2]).filter(Boolean));
+                  const kitGroups = new Set(insertionProducts.map(p => p.changeKitGroup).filter(Boolean));
+                  const lbGroups = new Set(insertionProducts.map(p => p.lbGroup).filter(Boolean));
+
+                  const socketCount = socketsData.filter(s => {
+                    const fac = (s.facility || '').trim().toUpperCase();
+                    const loc = (s.location || '').trim().toUpperCase();
+                    return fac === loc && loc && socketGroups.has(s.socketGroupPin1);
+                  }).length;
+                  
+                  const kitCount = kitsData.filter(k => {
+                    const fac = (k.facility || '').trim().toUpperCase();
+                    const loc = (k.location || '').trim().toUpperCase();
+                    return fac === loc && loc && kitGroups.has(k.changeKitGroup);
+                  }).length;
+                  
+                  const lbCount = loadBoardsData.filter(lb => {
+                    const fac = (lb.facility || '').trim().toUpperCase();
+                    const loc = (lb.location || '').trim().toUpperCase();
+                    return fac === loc && loc && lbGroups.has(lb.lbGroup);
+                  }).length;
+
+                  return (
+                    <div key={insertion} className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5">
+                      <h4 className="mb-4 text-lg font-bold text-zinc-900">{insertion}</h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-100">
+                          <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">Sockets</div>
+                          <div className="text-2xl font-light text-brand-primary">{socketCount}</div>
+                        </div>
+                        <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-100">
+                          <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">Change Kits</div>
+                          <div className="text-2xl font-light text-brand-primary">{kitCount}</div>
+                        </div>
+                        <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-100">
+                          <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">Load Boards</div>
+                          <div className="text-2xl font-light text-brand-primary">{lbCount}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }
