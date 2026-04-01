@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
-import { Plus, Trash2, Upload, FileSpreadsheet, Calculator, List } from 'lucide-react';
+import { Plus, Trash2, Upload, FileSpreadsheet, Calculator, List, Eraser, Table, Search, Filter, ChevronDown, ArrowUpDown, Check } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { cn } from '../lib/utils';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface RowData {
   id: string;
@@ -14,12 +14,139 @@ interface RowData {
   pogoPins: { name: string; need: number }[];
 }
 
+function MultiSelectDropdown({ values, onChange, options, placeholder }: { values: string[], onChange: (vals: string[]) => void, options: string[], placeholder: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(opt => opt.toLowerCase().includes(search.toLowerCase()));
+
+  const toggleOption = (opt: string) => {
+    if (values.includes(opt)) {
+      onChange(values.filter(v => v !== opt));
+    } else {
+      onChange([...values, opt]);
+    }
+  };
+
+  const displayValue = values.length === 0 
+    ? placeholder 
+    : values.length === 1 
+      ? values[0] 
+      : `${values[0]} (+${values.length - 1})`;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center justify-between px-3 py-1.5 text-sm bg-transparent border-none cursor-pointer outline-none hover:bg-zinc-50 rounded-md transition-colors",
+          values.length > 0 ? "text-brand-primary font-medium" : "text-zinc-700"
+        )}
+      >
+        <span className="truncate max-w-[120px]">{displayValue}</span>
+        <ChevronDown className="w-4 h-4 ml-2 opacity-50" />
+      </button>
+      
+      {isOpen && (
+        <div className="absolute z-50 w-64 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-80 flex flex-col">
+          <div className="p-2 border-b border-zinc-100">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
+              <input
+                type="text"
+                className="w-full pl-7 pr-2 py-1.5 text-sm border border-zinc-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+                placeholder="Search..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onClick={e => e.stopPropagation()}
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="overflow-y-auto p-1 flex-1">
+            <button
+              className={cn(
+                "w-full text-left px-2 py-1.5 text-sm rounded-md hover:bg-zinc-100",
+                values.length === 0 && "bg-zinc-100 font-medium"
+              )}
+              onClick={() => { onChange([]); setIsOpen(false); setSearch(''); }}
+            >
+              All (Clear Selection)
+            </button>
+            {filteredOptions.map(opt => {
+              const isSelected = values.includes(opt);
+              return (
+                <button
+                  key={opt}
+                  className={cn(
+                    "w-full flex items-center px-2 py-1.5 text-sm rounded-md hover:bg-zinc-100",
+                    isSelected && "bg-brand-primary/10 text-brand-primary font-medium"
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleOption(opt);
+                  }}
+                  title={opt}
+                >
+                  <div className={cn(
+                    "w-4 h-4 rounded border mr-2 flex items-center justify-center flex-shrink-0",
+                    isSelected ? "border-brand-primary bg-brand-primary text-white" : "border-zinc-300"
+                  )}>
+                    {isSelected && <Check className="w-3 h-3" />}
+                  </div>
+                  <span className="truncate flex-1 text-left">{opt}</span>
+                </button>
+              );
+            })}
+            {filteredOptions.length === 0 && (
+              <div className="px-2 py-3 text-sm text-center text-zinc-500">No results found</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RequiredPogoPin({ selectedFacility }: { selectedFacility: string }) {
-  const [activeTab, setActiveTab] = useState<'input' | 'summary'>('input');
-  const [rows, setRows] = useState<RowData[]>([]);
+  const [activeTab, setActiveTab] = useState<'input' | 'summary' | 'detailed'>('input');
+  const [rows, setRows] = useState<RowData[]>(() => {
+    const saved = localStorage.getItem('requiredPogoPinRows');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
   const [products, setProducts] = useState<any[]>([]);
   const [lifeTimes, setLifeTimes] = useState<any[]>([]);
+  const [pogoPinsData, setPogoPinsData] = useState<any[]>([]);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [detailedSearchTerm, setDetailedSearchTerm] = useState('');
+  const [filterPogoPins, setFilterPogoPins] = useState<string[]>([]);
+  const [filterNicknames, setFilterNicknames] = useState<string[]>([]);
+  const [filterDevices, setFilterDevices] = useState<string[]>([]);
+  const [filterInsertions, setFilterInsertions] = useState<string[]>([]);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('requiredPogoPinRows', JSON.stringify(rows));
+  }, [rows]);
 
   useEffect(() => {
     const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
@@ -38,9 +165,18 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
       setLifeTimes(data);
     });
 
+    const unsubPogoPins = onSnapshot(collection(db, 'pogoPins'), (snapshot) => {
+      let data = snapshot.docs.map(doc => doc.data());
+      if (selectedFacility !== 'ALL') {
+        data = data.filter(p => (p.facility || '').trim().toUpperCase() === selectedFacility);
+      }
+      setPogoPinsData(data);
+    });
+
     return () => {
       unsubProducts();
       unsubLifeTimes();
+      unsubPogoPins();
     };
   }, [selectedFacility]);
 
@@ -67,17 +203,24 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
     deviceProducts.forEach(product => {
       const processSocket = (socketName: string) => {
         if (!socketName) return;
-        const relatedLts = lts.filter(lt => lt.socketGroup === socketName);
+        const relatedLts = lts.filter(lt => (lt.socketGroup || '').trim().toUpperCase() === socketName.trim().toUpperCase());
         relatedLts.forEach(lt => {
-          if (!lt || !qty || !lt.lifeTime || !lt.pogoPinQty) return;
+          if (!lt || !lt.lifeTime) return;
           const lifeTime = Number(lt.lifeTime);
-          const pogoQty = Number(lt.pogoPinQty);
           if (lifeTime === 0) return;
-          const need = Math.ceil((qty / lifeTime) * 1.1 * 1.2 * pogoQty);
-          const pinName = lt.pogoPin1Pn;
-          if (pinName) {
+
+          const processPin = (pinName: string, pinQtyStr: string) => {
+            if (!pinName || !pinQtyStr) return;
+            const pogoQty = Number(pinQtyStr);
+            if (!pogoQty) return;
+            const need = qty ? Math.ceil((qty / lifeTime) * 1.1 * 1.2 * pogoQty) : 0;
             pogoMap[pinName] = (pogoMap[pinName] || 0) + need;
-          }
+          };
+
+          processPin(lt.pogoPin1Pn, lt.pogoPinQty);
+          processPin(lt.pogoPin2Pn, lt.pogoPin2Qty);
+          processPin(lt.pogoPin3Pn, lt.pogoPin3Qty);
+          processPin(lt.pogoPin4Pn, lt.pogoPin4Qty);
         });
       };
       processSocket(product.socketName1);
@@ -146,13 +289,200 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
   };
 
   const getSummary = () => {
-    const summary: Record<string, number> = {};
+    const summary: Record<string, { required: number; onHand: number; final: number }> = {};
+    
+    // Calculate required
     rows.forEach(row => {
       row.pogoPins.forEach(pin => {
-        summary[pin.name] = (summary[pin.name] || 0) + pin.need;
+        if (!summary[pin.name]) {
+          summary[pin.name] = { required: 0, onHand: 0, final: 0 };
+        }
+        summary[pin.name].required += pin.need;
       });
     });
-    return Object.entries(summary).sort((a, b) => b[1] - a[1]);
+
+    // Add on-hand and calculate final
+    Object.keys(summary).forEach(pinName => {
+      const onHandQty = pogoPinsData
+        .filter(p => p.pinPn === pinName)
+        .reduce((sum, p) => sum + (Number(p.qty) || 0), 0);
+      
+      summary[pinName].onHand = onHandQty;
+      summary[pinName].final = Math.max(0, summary[pinName].required - onHandQty);
+    });
+
+    return Object.entries(summary).sort((a, b) => b[1].required - a[1].required);
+  };
+
+  const summaryData = React.useMemo(() => getSummary(), [rows, pogoPinsData]);
+
+  const getDetailedSummary = React.useCallback(() => {
+    // 1. Find pogo pins from Summary list where final required > 0
+    const targetPins = summaryData
+      .filter(([, data]) => data.final > 0)
+      .map(([pinName, data]) => ({ pinName, data }));
+    
+    return targetPins.map(({ pinName, data }) => {
+      const details: any[] = [];
+      const seen = new Set<string>();
+
+      // Find all lifeTimes that use this pinName
+      const relatedLts = lifeTimes.filter(lt => 
+        lt.pogoPin1Pn === pinName || 
+        lt.pogoPin2Pn === pinName || 
+        lt.pogoPin3Pn === pinName || 
+        lt.pogoPin4Pn === pinName
+      );
+
+      // 2. Find all insertions that use this pin
+      const insertionsUsingPin = products.filter(prod => {
+        const s1 = (prod.socketName1 || '').trim().toUpperCase();
+        const s2 = (prod.socketName2 || '').trim().toUpperCase();
+        
+        return relatedLts.some(lt => {
+          const sg = (lt.socketGroup || '').trim().toUpperCase();
+          return sg === s1 || sg === s2;
+        });
+      });
+
+      // 3. Process each matching insertion
+      insertionsUsingPin.forEach(insertionProd => {
+        const device = insertionProd.device || '';
+        const nickName = insertionProd.nickname || '(No Nickname)';
+        const insertion = insertionProd.insertion || '';
+        const site = insertionProd.siteNumber || '';
+        
+        // 4. FCST from input list
+        const matchingRows = rows.filter(r => r.partNo && r.partNo.trim().toUpperCase() === device.trim().toUpperCase());
+        const fcst = matchingRows.reduce((sum, r) => sum + (Number(r.qty) || 0), 0);
+        
+        // 5. Find lifetime and reqQty for THIS SPECIFIC INSERTION and THIS PIN
+        const s1 = (insertionProd.socketName1 || '').trim().toUpperCase();
+        const s2 = (insertionProd.socketName2 || '').trim().toUpperCase();
+        
+        const matchedLt1 = relatedLts.find(lt => (lt.socketGroup || '').trim().toUpperCase() === s1);
+        const matchedLt2 = relatedLts.find(lt => (lt.socketGroup || '').trim().toUpperCase() === s2);
+        const matchedLt = matchedLt1 || matchedLt2;
+        
+        let reqPinQty = '';
+        let lifetimeVal = matchedLt?.lifeTime || '';
+        
+        if (matchedLt) {
+          if (matchedLt.pogoPin1Pn === pinName) reqPinQty = matchedLt.pogoPinQty;
+          else if (matchedLt.pogoPin2Pn === pinName) reqPinQty = matchedLt.pogoPin2Qty;
+          else if (matchedLt.pogoPin3Pn === pinName) reqPinQty = matchedLt.pogoPin3Qty;
+          else if (matchedLt.pogoPin4Pn === pinName) reqPinQty = matchedLt.pogoPin4Qty;
+        }
+
+        const key = `${device}-${insertion}-${site}-${nickName}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          details.push({
+            nickName,
+            device,
+            insertion,
+            site,
+            fcst,
+            lifetime: lifetimeVal,
+            reqPinQtyInOneSocket: reqPinQty
+          });
+        }
+      });
+
+      details.sort((a, b) => {
+        if (a.nickName !== b.nickName) return a.nickName.localeCompare(b.nickName);
+        if (a.device !== b.device) return a.device.localeCompare(b.device);
+        return a.insertion.localeCompare(b.insertion);
+      });
+
+      return {
+        pinName,
+        required: data.required,
+        onHand: data.onHand,
+        final: data.final,
+        details
+      };
+    });
+  }, [summaryData, rows, products, lifeTimes]);
+
+  const detailedSummaryData = React.useMemo(() => getDetailedSummary(), [getDetailedSummary]);
+
+  const uniquePogoPins = React.useMemo(() => {
+    return Array.from(new Set(detailedSummaryData.map(g => g.pinName))).filter(Boolean).sort();
+  }, [detailedSummaryData]);
+
+  const uniqueNicknames = React.useMemo(() => {
+    return Array.from(new Set(detailedSummaryData.flatMap(g => g.details.map(d => d.nickName)))).filter(Boolean).sort();
+  }, [detailedSummaryData]);
+
+  const uniqueDevices = React.useMemo(() => {
+    return Array.from(new Set(detailedSummaryData.flatMap(g => g.details.map(d => d.device)))).filter(Boolean).sort();
+  }, [detailedSummaryData]);
+
+  const uniqueInsertions = React.useMemo(() => {
+    return Array.from(new Set(detailedSummaryData.flatMap(g => g.details.map(d => d.insertion)))).filter(Boolean).sort();
+  }, [detailedSummaryData]);
+
+  const filteredDetailedSummaryData = React.useMemo(() => {
+    let result = detailedSummaryData;
+
+    if (detailedSearchTerm.trim()) {
+      const term = detailedSearchTerm.toLowerCase();
+      result = result.filter(group => group.pinName.toLowerCase().includes(term));
+    }
+
+    if (filterPogoPins.length > 0) {
+      result = result.filter(group => filterPogoPins.includes(group.pinName));
+    }
+
+    if (filterNicknames.length > 0 || filterDevices.length > 0 || filterInsertions.length > 0) {
+      result = result.map(group => {
+        const filteredDetails = group.details.filter(detail => {
+          const matchNickname = filterNicknames.length === 0 || filterNicknames.includes(detail.nickName);
+          const matchDevice = filterDevices.length === 0 || filterDevices.includes(detail.device);
+          const matchInsertion = filterInsertions.length === 0 || filterInsertions.includes(detail.insertion);
+          return matchNickname && matchDevice && matchInsertion;
+        });
+        return { ...group, details: filteredDetails };
+      }).filter(group => group.details.length > 0);
+    }
+
+    if (sortConfig) {
+      result = [...result].sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        if (['pinName', 'final', 'required', 'onHand'].includes(sortConfig.key)) {
+          aValue = a[sortConfig.key as keyof typeof a];
+          bValue = b[sortConfig.key as keyof typeof b];
+        } else {
+          aValue = a.details[0]?.[sortConfig.key as keyof typeof a.details[0]];
+          bValue = b.details[0]?.[sortConfig.key as keyof typeof b.details[0]];
+        }
+
+        if (aValue === undefined) aValue = '';
+        if (bValue === undefined) bValue = '';
+
+        if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+        if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [detailedSummaryData, detailedSearchTerm, filterPogoPins, filterNicknames, filterDevices, filterInsertions, sortConfig]);
+
+  const handleSort = (key: string) => {
+    setSortConfig(current => {
+      if (current?.key === key) {
+        if (current.direction === 'asc') return { key, direction: 'desc' };
+        return null;
+      }
+      return { key, direction: 'asc' };
+    });
   };
 
   return (
@@ -189,10 +519,20 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
             <List className="h-4 w-4" />
             Summary list
           </button>
+          <button
+            onClick={() => setActiveTab('detailed')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+              activeTab === 'detailed' ? "bg-zinc-100 text-zinc-900" : "text-zinc-500 hover:text-zinc-700"
+            )}
+          >
+            <Table className="h-4 w-4" />
+            Detailed list
+          </button>
         </div>
       </div>
 
-      {activeTab === 'input' ? (
+      {activeTab === 'input' && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -218,6 +558,15 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
                   onChange={handleFileUpload}
                 />
               </label>
+              {rows.length > 0 && (
+                <button
+                  onClick={() => setIsClearModalOpen(true)}
+                  className="flex items-center gap-2 rounded-xl bg-white border border-red-200 px-4 py-2 text-sm font-bold text-red-600 transition-all hover:bg-red-50 cursor-pointer shadow-sm"
+                >
+                  <Eraser className="h-4 w-4" />
+                  Clear All
+                </button>
+              )}
             </div>
             <div className="text-xs text-zinc-400">
               Excel format: Col A = PartNo, Col B = Qty (starting from row 2)
@@ -299,7 +648,9 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
             </table>
           </div>
         </motion.div>
-      ) : (
+      )}
+
+      {activeTab === 'summary' && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -311,15 +662,36 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {getSummary().length === 0 ? (
+              {summaryData.length === 0 ? (
                 <div className="col-span-full text-center py-8 text-zinc-500">
                   No data to summarize. Please add items in the Input list.
                 </div>
               ) : (
-                getSummary().map(([name, total]) => (
-                  <div key={name} className="flex items-center justify-between p-4 rounded-xl border border-zinc-100 bg-zinc-50">
-                    <span className="font-medium text-zinc-700">{name}</span>
-                    <span className="text-2xl font-light text-brand-primary">{total.toLocaleString()}</span>
+                summaryData.map(([name, data]) => (
+                  <div key={name} className="flex flex-col p-5 rounded-xl border border-zinc-100 bg-zinc-50 gap-4">
+                    <div className="font-bold text-zinc-800 text-lg border-b border-zinc-200 pb-2">{name}</div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-zinc-500 uppercase tracking-wider font-medium">Required</span>
+                        <span className="text-xl font-semibold text-zinc-700">{data.required.toLocaleString()}</span>
+                      </div>
+                      
+                      <div className="flex flex-col">
+                        <span className="text-xs text-zinc-500 uppercase tracking-wider font-medium">On Hand</span>
+                        <span className="text-xl font-semibold text-emerald-600">{data.onHand.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-zinc-200 flex items-center justify-between">
+                      <span className="text-sm font-bold text-zinc-700">Final Required</span>
+                      <span className={cn(
+                        "text-2xl font-bold",
+                        data.final > 0 ? "text-rose-600" : "text-emerald-600"
+                      )}>
+                        {data.final.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 ))
               )}
@@ -327,6 +699,273 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
           </div>
         </motion.div>
       )}
+
+      {activeTab === 'detailed' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden"
+        >
+          <div className="p-6 border-b border-zinc-100 bg-zinc-50/50 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-zinc-900">Detailed Pogo Pin Analysis</h3>
+                <p className="text-sm text-zinc-500">Comprehensive breakdown of pogo pin requirements by device and insertion</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-xl px-2 py-1 shadow-sm">
+                  <Filter className="h-4 w-4 text-zinc-400 ml-2" />
+                  <MultiSelectDropdown
+                    values={filterPogoPins}
+                    onChange={setFilterPogoPins}
+                    options={uniquePogoPins as string[]}
+                    placeholder="All Pogo Pins"
+                  />
+                  <div className="w-px h-4 bg-zinc-200 mx-1"></div>
+                  <MultiSelectDropdown
+                    values={filterNicknames}
+                    onChange={setFilterNicknames}
+                    options={uniqueNicknames as string[]}
+                    placeholder="All Nicknames"
+                  />
+                  <div className="w-px h-4 bg-zinc-200 mx-1"></div>
+                  <MultiSelectDropdown
+                    values={filterDevices}
+                    onChange={setFilterDevices}
+                    options={uniqueDevices as string[]}
+                    placeholder="All Devices"
+                  />
+                  <div className="w-px h-4 bg-zinc-200 mx-1"></div>
+                  <MultiSelectDropdown
+                    values={filterInsertions}
+                    onChange={setFilterInsertions}
+                    options={uniqueInsertions as string[]}
+                    placeholder="All Insertions"
+                  />
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                  <input
+                    type="text"
+                    placeholder="Search Pogo Pin..."
+                    value={detailedSearchTerm}
+                    onChange={(e) => setDetailedSearchTerm(e.target.value)}
+                    className="pl-9 pr-4 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all w-64 shadow-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="overflow-x-auto p-6">
+            <table className="w-full text-sm text-zinc-700 border-collapse">
+              <thead className="bg-zinc-100 text-xs uppercase text-zinc-600 border-b border-zinc-300">
+                <tr>
+                  <th className="border border-zinc-300 px-3 py-2 font-medium text-left whitespace-nowrap cursor-pointer hover:bg-zinc-200 select-none" onClick={() => handleSort('pinName')}>
+                    <div className="flex items-center gap-1 justify-between">
+                      <span>Pogo pin name</span>
+                      <ArrowUpDown className={cn("h-3 w-3", sortConfig?.key === 'pinName' ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
+                  </th>
+                  <th className="border border-zinc-300 px-3 py-2 font-medium text-right whitespace-nowrap text-red-600 cursor-pointer hover:bg-zinc-200 select-none" onClick={() => handleSort('final')}>
+                    <div className="flex items-center gap-1 justify-end">
+                      <span>Required Pin Qty</span>
+                      <ArrowUpDown className={cn("h-3 w-3", sortConfig?.key === 'final' ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
+                  </th>
+                  <th className="border border-zinc-300 px-3 py-2 font-medium text-right whitespace-nowrap cursor-pointer hover:bg-zinc-200 select-none" onClick={() => handleSort('required')}>
+                    <div className="flex items-center gap-1 justify-end">
+                      <span>Calculation Pin Qty</span>
+                      <ArrowUpDown className={cn("h-3 w-3", sortConfig?.key === 'required' ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
+                  </th>
+                  <th className="border border-zinc-300 px-3 py-2 font-medium text-right whitespace-nowrap cursor-pointer hover:bg-zinc-200 select-none" onClick={() => handleSort('onHand')}>
+                    <div className="flex items-center gap-1 justify-end">
+                      <span>On hand Qty</span>
+                      <ArrowUpDown className={cn("h-3 w-3", sortConfig?.key === 'onHand' ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
+                  </th>
+                  <th className="border border-zinc-300 px-3 py-2 font-medium text-left whitespace-nowrap cursor-pointer hover:bg-zinc-200 select-none" onClick={() => handleSort('nickName')}>
+                    <div className="flex items-center gap-1 justify-between">
+                      <span>Nickname</span>
+                      <ArrowUpDown className={cn("h-3 w-3", sortConfig?.key === 'nickName' ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
+                  </th>
+                  <th className="border border-zinc-300 px-3 py-2 font-medium text-left whitespace-nowrap cursor-pointer hover:bg-zinc-200 select-none" onClick={() => handleSort('device')}>
+                    <div className="flex items-center gap-1 justify-between">
+                      <span>Device</span>
+                      <ArrowUpDown className={cn("h-3 w-3", sortConfig?.key === 'device' ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
+                  </th>
+                  <th className="border border-zinc-300 px-3 py-2 font-medium text-left whitespace-nowrap cursor-pointer hover:bg-zinc-200 select-none" onClick={() => handleSort('insertion')}>
+                    <div className="flex items-center gap-1 justify-between">
+                      <span>Insertion</span>
+                      <ArrowUpDown className={cn("h-3 w-3", sortConfig?.key === 'insertion' ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
+                  </th>
+                  <th className="border border-zinc-300 px-3 py-2 font-medium text-right whitespace-nowrap cursor-pointer hover:bg-zinc-200 select-none" onClick={() => handleSort('siteNumber')}>
+                    <div className="flex items-center gap-1 justify-end">
+                      <span>Site number</span>
+                      <ArrowUpDown className={cn("h-3 w-3", sortConfig?.key === 'siteNumber' ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
+                  </th>
+                  <th className="border border-zinc-300 px-3 py-2 font-medium text-right whitespace-nowrap cursor-pointer hover:bg-zinc-200 select-none" onClick={() => handleSort('fcst')}>
+                    <div className="flex items-center gap-1 justify-end">
+                      <span>FCST</span>
+                      <ArrowUpDown className={cn("h-3 w-3", sortConfig?.key === 'fcst' ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
+                  </th>
+                  <th className="border border-zinc-300 px-3 py-2 font-medium text-right whitespace-nowrap cursor-pointer hover:bg-zinc-200 select-none" onClick={() => handleSort('lifeTime')}>
+                    <div className="flex items-center gap-1 justify-end">
+                      <span>Lifetime</span>
+                      <ArrowUpDown className={cn("h-3 w-3", sortConfig?.key === 'lifeTime' ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
+                  </th>
+                  <th className="border border-zinc-300 px-3 py-2 font-medium text-right whitespace-nowrap cursor-pointer hover:bg-zinc-200 select-none" onClick={() => handleSort('requiredQty')}>
+                    <div className="flex items-center gap-1 justify-end">
+                      <span>Required pin qty in one socket</span>
+                      <ArrowUpDown className={cn("h-3 w-3", sortConfig?.key === 'requiredQty' ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDetailedSummaryData.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="px-4 py-8 text-center text-zinc-500 border border-zinc-300">
+                      {detailedSearchTerm ? 'No matching pogo pins found.' : 'No data to display. Please add items in the Input list.'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredDetailedSummaryData.map((pinGroup, pinIndex) => {
+                    if (pinGroup.details.length === 0) {
+                      return (
+                        <tr key={pinGroup.pinName} className="hover:bg-zinc-50">
+                          <td className="border border-zinc-300 px-3 py-2 text-left font-medium">{pinGroup.pinName}</td>
+                          <td className="border border-zinc-300 px-3 py-2 text-right font-bold text-red-600">{pinGroup.final.toLocaleString()}</td>
+                          <td className="border border-zinc-300 px-3 py-2 text-right">{pinGroup.required.toLocaleString()}</td>
+                          <td className="border border-zinc-300 px-3 py-2 text-right">{pinGroup.onHand.toLocaleString()}</td>
+                          <td className="border border-zinc-300 px-3 py-2 text-center text-zinc-400" colSpan={7}>No device details found</td>
+                        </tr>
+                      );
+                    }
+
+                    return pinGroup.details.map((detail, detailIndex) => {
+                      const isFirstPin = detailIndex === 0;
+                      
+                      let isFirstNickName = false;
+                      let nickNameRowSpan = 1;
+                      if (detailIndex === 0 || pinGroup.details[detailIndex - 1].nickName !== detail.nickName) {
+                        isFirstNickName = true;
+                        let count = 1;
+                        for (let i = detailIndex + 1; i < pinGroup.details.length; i++) {
+                          if (pinGroup.details[i].nickName === detail.nickName) count++;
+                          else break;
+                        }
+                        nickNameRowSpan = count;
+                      }
+
+                      let isFirstDevice = false;
+                      let deviceRowSpan = 1;
+                      if (detailIndex === 0 || pinGroup.details[detailIndex - 1].device !== detail.device || pinGroup.details[detailIndex - 1].nickName !== detail.nickName) {
+                        isFirstDevice = true;
+                        let count = 1;
+                        for (let i = detailIndex + 1; i < pinGroup.details.length; i++) {
+                          if (pinGroup.details[i].device === detail.device && pinGroup.details[i].nickName === detail.nickName) count++;
+                          else break;
+                        }
+                        deviceRowSpan = count;
+                      }
+
+                      return (
+                        <tr key={`${pinGroup.pinName}-${detailIndex}`} className="hover:bg-zinc-50/50">
+                          {isFirstPin && (
+                            <>
+                              <td className="border border-zinc-300 px-3 py-2 align-top text-left font-bold bg-yellow-100/50" rowSpan={pinGroup.details.length}>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-zinc-400 text-xs">⊟</span>
+                                  {pinGroup.pinName}
+                                </div>
+                              </td>
+                              <td className="border border-zinc-300 px-3 py-2 align-top text-right font-bold text-red-600 bg-yellow-100/50" rowSpan={pinGroup.details.length}>
+                                {pinGroup.final.toLocaleString()}
+                              </td>
+                              <td className="border border-zinc-300 px-3 py-2 align-top text-right bg-yellow-100/50" rowSpan={pinGroup.details.length}>
+                                {pinGroup.required.toLocaleString()}
+                              </td>
+                              <td className="border border-zinc-300 px-3 py-2 align-top text-right bg-yellow-100/50" rowSpan={pinGroup.details.length}>
+                                {pinGroup.onHand.toLocaleString()}
+                              </td>
+                            </>
+                          )}
+                          {isFirstNickName && (
+                            <td className="border border-zinc-300 px-3 py-2 align-top text-left font-medium bg-white" rowSpan={nickNameRowSpan}>
+                              <div className="flex items-center gap-1">
+                                <span className="text-zinc-400 text-xs">⊟</span>
+                                {detail.nickName}
+                              </div>
+                            </td>
+                          )}
+                          {isFirstDevice && (
+                            <td className="border border-zinc-300 px-3 py-2 align-top text-left bg-white" rowSpan={deviceRowSpan}>
+                              <div className="flex items-center gap-1">
+                                <span className="text-zinc-400 text-xs">⊟</span>
+                                {detail.device}
+                              </div>
+                            </td>
+                          )}
+                          <td className="border border-zinc-300 px-3 py-2 text-left">
+                            <div className="flex items-center gap-1">
+                              <span className="text-zinc-400 text-xs">⊟</span>
+                              {detail.insertion}
+                            </div>
+                          </td>
+                          <td className="border border-zinc-300 px-3 py-2 text-right">{detail.site}</td>
+                          <td className="border border-zinc-300 px-3 py-2 text-right">{detail.fcst || 0}</td>
+                          <td className="border border-zinc-300 px-3 py-2 text-right">{detail.lifetime}</td>
+                          <td className="border border-zinc-300 px-3 py-2 text-right">{detail.reqPinQtyInOneSocket}</td>
+                        </tr>
+                      );
+                    });
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
+      <AnimatePresence>
+        {isClearModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            >
+              <h3 className="text-lg font-bold text-zinc-900 mb-2">Clear All Data</h3>
+              <p className="text-sm text-zinc-500 mb-6">Are you sure you want to clear all imported and manually entered data? This action cannot be undone.</p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setIsClearModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setRows([]);
+                    setIsClearModalOpen(false);
+                  }}
+                  className="px-4 py-2 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors"
+                >
+                  Clear All
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
