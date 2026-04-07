@@ -128,6 +128,9 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
   const [filterProjects, setFilterProjects] = usePersistentState<string[]>('socketInfo_filterProjects', []);
   const [filterStatuses, setFilterStatuses] = usePersistentState<string[]>('socketInfo_filterStatuses', []);
   const [filterPogoPinPns, setFilterPogoPinPns] = usePersistentState<string[]>('socketInfo_filterPogoPinPns', []);
+  const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('socketInfo_visibleColumns', [
+    'facility', 'location', 'toolsId', 'package', 'pinBall', 'packageSize', 'project', 'status', 'contactCountPin1', 'lifeCountPin1', 'contactLimitPin1', 'socketGroupPin1', 'pogoPinPnPin1', 'socketPnPin1', 'contactCountOver70Pin1', 'contactCountPin2', 'lifeCountPin2', 'contactLimitPin2', 'pogoPinPnPin2', 'contactCountOver70Pin2', 'contactCountPcb', 'lifeCountPcb', 'contactLimitPcb', 'pnPcb', 'contactCountOver70Pcb', 'usedFlag'
+  ]);
   const [displayCount, setDisplayCount] = useState(100);
 
   useEffect(() => {
@@ -159,11 +162,33 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
     }
   };
 
-  const uniqueSocketGroups = React.useMemo(() => Array.from(new Set(sockets.map(s => String(s.socketGroupPin1 || '')).filter(Boolean))).sort(), [sockets]);
-  const uniqueToolsIds = React.useMemo(() => Array.from(new Set(sockets.map(s => String(s.toolsId || '')).filter(Boolean))).sort(), [sockets]);
-  const uniqueProjects = React.useMemo(() => Array.from(new Set(sockets.map(s => String(s.project || '')).filter(Boolean))).sort(), [sockets]);
-  const uniqueStatuses = React.useMemo(() => Array.from(new Set(sockets.map(s => String(s.status || '')).filter(Boolean))).sort(), [sockets]);
-  const uniquePogoPinPns = React.useMemo(() => Array.from(new Set(sockets.map(s => String(s.pogoPinPnPin1 || '')).filter(Boolean))).sort(), [sockets]);
+  const getUniqueValues = (key: keyof Socket, currentFilters: any) => {
+    const filtered = sockets.filter(s => {
+      for (const [filterKey, filterValues] of Object.entries(currentFilters)) {
+        if (filterKey === key) continue;
+        const values = filterValues as string[];
+        if (values.length > 0 && !values.includes(String(s[filterKey as keyof Socket] || ''))) {
+          return false;
+        }
+      }
+      return true;
+    });
+    return Array.from(new Set(filtered.map(s => String(s[key] || '')).filter(Boolean))).sort();
+  };
+
+  const currentFilters = {
+    socketGroupPin1: filterSocketGroups,
+    toolsId: filterToolsIds,
+    project: filterProjects,
+    status: filterStatuses,
+    pogoPinPnPin1: filterPogoPinPns
+  };
+
+  const uniqueSocketGroups = React.useMemo(() => getUniqueValues('socketGroupPin1', currentFilters), [sockets, filterToolsIds, filterProjects, filterStatuses, filterPogoPinPns]);
+  const uniqueToolsIds = React.useMemo(() => getUniqueValues('toolsId', currentFilters), [sockets, filterSocketGroups, filterProjects, filterStatuses, filterPogoPinPns]);
+  const uniqueProjects = React.useMemo(() => getUniqueValues('project', currentFilters), [sockets, filterSocketGroups, filterToolsIds, filterStatuses, filterPogoPinPns]);
+  const uniqueStatuses = React.useMemo(() => getUniqueValues('status', currentFilters), [sockets, filterSocketGroups, filterToolsIds, filterProjects, filterPogoPinPns]);
+  const uniquePogoPinPns = React.useMemo(() => getUniqueValues('pogoPinPnPin1', currentFilters), [sockets, filterSocketGroups, filterToolsIds, filterProjects, filterStatuses]);
 
   const stats = React.useMemo(() => {
     return sockets.reduce((acc, socket) => {
@@ -199,7 +224,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
     });
   }, [sockets, searchTerm, filterSocketGroups, filterToolsIds, filterProjects, filterStatuses, filterPogoPinPns]);
 
-  const columns = [
+  const allColumns = [
     { key: 'facility', label: 'Facility' },
     { key: 'location', label: 'Location' },
     { key: 'toolsId', label: 'Tools ID' },
@@ -227,6 +252,8 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
     { key: 'contactCountOver70Pcb', label: 'Contact count over 70% - PCB' },
     { key: 'usedFlag', label: 'Used Flag' },
   ];
+
+  const columns = allColumns.filter(col => visibleColumns.includes(col.key));
 
   return (
     <div className="space-y-8">
@@ -284,6 +311,16 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
               onChange={setFilterPogoPinPns}
               options={uniquePogoPinPns}
               placeholder="All Pogo Pin P/Ns"
+            />
+            <div className="w-px h-4 bg-zinc-200 mx-1"></div>
+            <MultiSelectDropdown
+              values={allColumns.filter(c => visibleColumns.includes(c.key)).map(c => c.label)}
+              onChange={(labels) => {
+                const newVisible = allColumns.filter(c => labels.includes(c.label)).map(c => c.key);
+                setVisibleColumns(newVisible);
+              }}
+              options={allColumns.map(c => c.label)}
+              placeholder="Columns"
             />
           </div>
           <div className="relative group">

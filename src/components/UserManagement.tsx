@@ -3,11 +3,14 @@ import { db, auth, firebaseConfig } from '../firebase';
 import { collection, onSnapshot, setDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, getAuth, signOut, setPersistence, inMemoryPersistence } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
-import { Plus, Trash2, UserPlus, Shield, User as UserIcon, Users, Edit2, Check, X, Loader2, Mail, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Shield, User as UserIcon, Users, Edit2, Check, X, Loader2, Mail, List, LayoutGrid, Filter, Search } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { logAuditAction } from '../lib/audit';
 import { motion, AnimatePresence } from 'motion/react';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { usePersistentState } from '../lib/usePersistentState';
+import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
+import { DoubleScrollbar } from './ui/DoubleScrollbar';
 
 enum OperationType {
   CREATE = 'create',
@@ -74,13 +77,16 @@ export default function UserManagement() {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'user'>('user');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = usePersistentState<'card' | 'table'>('userManagement_viewMode', 'card');
+  const [filterRoles, setFilterRoles] = usePersistentState<string[]>('userManagement_filterRoles', []);
+  const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('userManagement_visibleColumns', ['username', 'email', 'role', 'createdAt']);
+  const [displayCount, setDisplayCount] = useState(100);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<'admin' | 'user'>('user');
   const [resettingId, setResettingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [deleteModal, setDeleteModal] = useState<{isOpen: boolean, id: string | null, username: string | null}>({ 
     isOpen: false, 
     id: null, 
@@ -101,8 +107,6 @@ export default function UserManagement() {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    setSuccess(null);
     
     let secondaryApp;
     try {
@@ -128,17 +132,15 @@ export default function UserManagement() {
       }
       
       await logAuditAction('Add User', `Added user ${newUsername} with role ${newRole}`);
-      setSuccess(`成功新增用戶：${newUsername}`);
       setNewUsername('');
       setNewEmail('');
       setNewPassword('');
-      setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/email-already-in-use') {
-        setError('此帳號或 Email 已被使用。如果您之前刪除過此用戶，其底層驗證帳號仍然存在，請使用不同的帳號名稱。');
+        alert('A user with this email/username already exists.');
       } else {
-        setError('新增用戶失敗：' + (err.message || '未知錯誤'));
+        alert('Failed to add user: ' + err.message);
       }
     } finally {
       if (secondaryApp) {
@@ -179,22 +181,27 @@ export default function UserManagement() {
     }
   };
 
-  const handleDeleteUser = async () => {
-    if (!deleteModal.id) return;
-    
-    setDeletingId(deleteModal.id);
-    const path = `users/${deleteModal.id}`;
-    try {
-      const userToDelete = users.find(u => u.id === deleteModal.id);
-      await deleteDoc(doc(db, 'users', deleteModal.id));
-      await logAuditAction('Delete User', `Deleted user ${userToDelete?.username}`);
-      setDeleteModal({ isOpen: false, id: null, username: null });
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.DELETE, path);
-    } finally {
-      setDeletingId(null);
-    }
-  };
+  const filteredForRoles = React.useMemo(() => {
+    return users;
+  }, [users]);
+
+  const uniqueRoles = React.useMemo(() => Array.from(new Set(filteredForRoles.map(u => String(u.role || '')).filter(Boolean))).sort(), [filteredForRoles]);
+
+  const filteredUsers = React.useMemo(() => {
+    return users.filter(u => {
+      const matchSearch = (u.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (u.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchRole = filterRoles.length === 0 || filterRoles.includes(String(u.role || ''));
+      return matchSearch && matchRole;
+    });
+  }, [users, searchTerm, filterRoles]);
+
+  const columns = [
+    { key: 'username', label: 'Username' },
+    { key: 'email', label: 'Email' },
+    { key: 'role', label: 'Role' },
+    { key: 'createdAt', label: 'Created At' },
+  ];
 
   return (
     <motion.div 
@@ -218,31 +225,6 @@ export default function UserManagement() {
             <span>Total: {users.length}</span>
           </div>
         </div>
-
-        <AnimatePresence mode="wait">
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-              animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
-              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-              className="rounded-xl bg-red-50 p-3 text-sm text-red-600 ring-1 ring-red-200 flex items-center gap-2 overflow-hidden"
-            >
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              {error}
-            </motion.div>
-          )}
-          {success && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-              animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
-              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-              className="rounded-xl bg-green-50 p-3 text-sm text-green-600 ring-1 ring-green-200 flex items-center gap-2 overflow-hidden"
-            >
-              <Check className="h-4 w-4 shrink-0" />
-              {success}
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <form onSubmit={handleAddUser} className="grid grid-cols-1 gap-4 md:grid-cols-5">
           <div className="space-y-1.5">
@@ -305,97 +287,290 @@ export default function UserManagement() {
         </form>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <AnimatePresence mode="popLayout">
-          {users.map(user => (
-            <motion.div 
-              key={user.id}
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="group relative flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 transition-all hover:shadow-md hover:border-zinc-300"
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-xl px-2 py-1 shadow-sm">
+            <button
+              onClick={() => {
+                setFilterRoles([]);
+              }}
+              className="px-2 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors whitespace-nowrap"
             >
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-2xl transition-colors",
-                  user.role === 'admin' ? "bg-purple-50 text-purple-600" : "bg-blue-50 text-blue-600"
-                )}>
-                  {user.role === 'admin' ? <Shield className="h-6 w-6" /> : <UserIcon className="h-6 w-6" />}
-                </div>
-                <div>
-                  <p className="font-bold text-zinc-900">{user.username}</p>
-                  <p className="text-[10px] text-zinc-400 truncate max-w-[120px]">{user.email}</p>
-                  {editingUserId === user.id ? (
-                    <select
-                      value={editRole}
-                      onChange={(e) => setEditRole(e.target.value as 'admin' | 'user')}
-                      className="mt-1 block w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs font-medium focus:outline-none"
-                    >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  ) : (
-                    <span className={cn(
-                      "inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider mt-1",
-                      user.role === 'admin' ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
-                    )}>
-                      {user.role}
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {user.username !== 'Leo.Lo' && user.username !== 'Owner' && (
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {editingUserId === user.id ? (
-                    <>
-                      <button 
-                        onClick={() => handleUpdateRole(user.id)}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => setEditingUserId(null)}
-                        className="p-2 text-zinc-400 hover:bg-zinc-100 rounded-lg transition-colors"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button 
-                        onClick={() => handleSendResetEmail(user)}
-                        disabled={resettingId === user.id}
-                        title="Send password reset email"
-                        className="p-2 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        {resettingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setEditingUserId(user.id);
-                          setEditRole(user.role);
-                        }}
-                        className="p-2 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => setDeleteModal({ isOpen: true, id: user.id, username: user.username })}
-                        className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              Clear Filters
+            </button>
+            <div className="w-px h-4 bg-zinc-200 mx-1"></div>
+            <Filter className="h-4 w-4 text-zinc-400 ml-2" />
+            <MultiSelectDropdown
+              values={filterRoles}
+              onChange={setFilterRoles}
+              options={uniqueRoles}
+              placeholder="All Roles"
+            />
+            <div className="w-px h-4 bg-zinc-200 mx-1"></div>
+            <MultiSelectDropdown
+              values={visibleColumns}
+              onChange={setVisibleColumns}
+              options={columns.map(c => c.key)}
+              labels={columns.reduce((acc, c) => ({ ...acc, [c.key]: c.label }), {})}
+              placeholder="Columns"
+              icon={<List className="h-4 w-4 text-zinc-400" />}
+            />
+          </div>
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 group-focus-within:text-brand-primary transition-colors" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-64 rounded-xl border border-zinc-200 bg-white pl-10 pr-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none transition-all"
+            />
+          </div>
+        </div>
+        <div className="flex rounded-xl border border-zinc-200 bg-zinc-50/50 p-1">
+          <button
+            onClick={() => setViewMode('card')}
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition-all",
+              viewMode === 'card' ? "bg-white text-brand-primary shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+            )}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            CARD
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition-all",
+              viewMode === 'table' ? "bg-white text-brand-primary shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+            )}
+          >
+            <List className="h-3.5 w-3.5" />
+            TABLE
+          </button>
+        </div>
       </div>
+
+      <AnimatePresence mode="wait">
+        {viewMode === 'card' ? (
+          <motion.div 
+            key="card"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <AnimatePresence mode="popLayout">
+              {filteredUsers.slice(0, displayCount).map(user => (
+                <motion.div 
+                  key={user.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="group relative flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 transition-all hover:shadow-md hover:border-zinc-300"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "flex h-12 w-12 items-center justify-center rounded-2xl transition-colors",
+                      user.role === 'admin' ? "bg-purple-50 text-purple-600" : "bg-blue-50 text-blue-600"
+                    )}>
+                      {user.role === 'admin' ? <Shield className="h-6 w-6" /> : <UserIcon className="h-6 w-6" />}
+                    </div>
+                    <div>
+                      <p className="font-bold text-zinc-900">{user.username}</p>
+                      <p className="text-[10px] text-zinc-400 truncate max-w-[120px]">{user.email}</p>
+                      {editingUserId === user.id ? (
+                        <select
+                          value={editRole}
+                          onChange={(e) => setEditRole(e.target.value as 'admin' | 'user')}
+                          className="mt-1 block w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs font-medium focus:outline-none"
+                        >
+                          <option value="user">User</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      ) : (
+                        <span className={cn(
+                          "inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider mt-1",
+                          user.role === 'admin' ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
+                        )}>
+                          {user.role}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {user.username !== 'Leo.Lo' && user.username !== 'Owner' && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {editingUserId === user.id ? (
+                        <>
+                          <button 
+                            onClick={() => handleUpdateRole(user.id)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => setEditingUserId(null)}
+                            className="p-2 text-zinc-400 hover:bg-zinc-100 rounded-lg transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => handleSendResetEmail(user)}
+                            disabled={resettingId === user.id}
+                            title="Send password reset email"
+                            className="p-2 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {resettingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setEditingUserId(user.id);
+                              setEditRole(user.role);
+                            }}
+                            className="p-2 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => setDeleteModal({ isOpen: true, id: user.id, username: user.username })}
+                            className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {filteredUsers.length > displayCount && (
+              <div className="col-span-full py-8 text-center text-zinc-400 italic">
+                Showing {displayCount} of {filteredUsers.length} users. <button onClick={() => setDisplayCount(prev => prev + 100)} className="text-brand-primary hover:underline font-medium not-italic">Load more</button>.
+              </div>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div 
+            key="table"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="relative overflow-hidden rounded-2xl border border-zinc-100 bg-white"
+          >
+            <DoubleScrollbar>
+              <table className="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr className="bg-zinc-50/50">
+                    {columns.filter(col => visibleColumns.includes(col.key)).map((col, i) => (
+                      <th key={col.key} className={cn("px-6 py-4 border-b border-zinc-100", i === 0 && visibleColumns[0] === col.key && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">
+                          {col.label}
+                        </span>
+                      </th>
+                    ))}
+                    <th className="px-6 py-4 border-b border-zinc-100 text-right">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-50">
+                  {filteredUsers.slice(0, displayCount).map((user, idx) => (
+                    <motion.tr 
+                      key={user.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(idx * 0.01, 0.5) }}
+                      className="group hover:bg-zinc-50/80 transition-colors"
+                    >
+                      {columns.filter(col => visibleColumns.includes(col.key)).map((col, i) => (
+                        <td key={col.key} className={cn("px-6 py-4 text-zinc-600 whitespace-nowrap", i === 0 && visibleColumns[0] === col.key && "sticky left-0 bg-white group-hover:bg-zinc-50/80 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors")}>
+                          {editingUserId === user.id && col.key === 'role' ? (
+                            <select
+                              value={editRole}
+                              onChange={(e) => setEditRole(e.target.value as 'admin' | 'user')}
+                              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all"
+                            >
+                              <option value="user">User</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                          ) : (
+                            <span className={cn(
+                              "font-medium",
+                              col.key === 'username' ? "text-brand-primary font-bold" : "text-zinc-500"
+                            )}>
+                              {col.key === 'createdAt' ? new Date(user.createdAt).toLocaleString() : user[col.key as keyof UserData]}
+                            </span>
+                          )}
+                        </td>
+                      ))}
+                      <td className="px-6 py-4 text-right">
+                        {user.username !== 'Leo.Lo' && user.username !== 'Owner' && (
+                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {editingUserId === user.id ? (
+                              <>
+                                <button 
+                                  onClick={() => handleUpdateRole(user.id)}
+                                  className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </button>
+                                <button 
+                                  onClick={() => setEditingUserId(null)}
+                                  className="p-2 text-zinc-400 hover:bg-zinc-100 rounded-lg transition-colors"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button 
+                                  onClick={() => handleSendResetEmail(user)}
+                                  disabled={resettingId === user.id}
+                                  className="p-2 rounded-lg hover:bg-amber-50 text-zinc-400 hover:text-amber-600 transition-all"
+                                >
+                                  {resettingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    setEditingUserId(user.id);
+                                    setEditRole(user.role);
+                                  }}
+                                  className="p-2 rounded-lg hover:bg-white hover:shadow-sm text-zinc-400 hover:text-brand-primary transition-all"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+                                <button 
+                                  onClick={() => setDeleteModal({ isOpen: true, id: user.id, username: user.username })}
+                                  className="p-2 rounded-lg hover:bg-rose-50 text-zinc-400 hover:text-rose-600 transition-all"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </motion.tr>
+                  ))}
+                  {filteredUsers.length > displayCount && (
+                    <tr>
+                      <td colSpan={visibleColumns.length + 1} className="px-6 py-8 text-center text-zinc-400 italic">
+                        Showing {displayCount} of {filteredUsers.length} users. <button onClick={() => setDisplayCount(prev => prev + 100)} className="text-brand-primary hover:underline font-medium not-italic">Load more</button>.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </DoubleScrollbar>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>

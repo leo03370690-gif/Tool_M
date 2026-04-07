@@ -103,6 +103,9 @@ export default function LoadBoardInfo({ isAdmin, selectedFacility }: { isAdmin: 
   const [filterLBNames, setFilterLBNames] = usePersistentState<string[]>('lbInfo_filterLBNames', []);
   const [filterLBGroups, setFilterLBGroups] = usePersistentState<string[]>('lbInfo_filterLBGroups', []);
   const [filterLocations, setFilterLocations] = usePersistentState<string[]>('lbInfo_filterLocations', []);
+  const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('lbInfo_visibleColumns', [
+    'facility', 'projectName', 'lbName', 'lbGroup', 'location', 'insertion', 'availableQty', 'remark', 'sendBackDate', 'targetReturnDate'
+  ]);
   const [displayCount, setDisplayCount] = useState(100);
 
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
@@ -143,10 +146,31 @@ export default function LoadBoardInfo({ isAdmin, selectedFacility }: { isAdmin: 
     }
   };
 
-  const uniqueProjectNames = React.useMemo(() => Array.from(new Set(loadBoards.map(lb => String(lb.projectName || '')).filter(Boolean))).sort(), [loadBoards]);
-  const uniqueLBNames = React.useMemo(() => Array.from(new Set(loadBoards.map(lb => String(lb.lbName || '')).filter(Boolean))).sort(), [loadBoards]);
-  const uniqueLBGroups = React.useMemo(() => Array.from(new Set(loadBoards.map(lb => String(lb.lbGroup || '')).filter(Boolean))).sort(), [loadBoards]);
-  const uniqueLocations = React.useMemo(() => Array.from(new Set(loadBoards.map(lb => String(lb.location || '')).filter(Boolean))).sort(), [loadBoards]);
+  const getUniqueValues = (key: keyof LoadBoard, currentFilters: any) => {
+    const filtered = loadBoards.filter(lb => {
+      for (const [filterKey, filterValues] of Object.entries(currentFilters)) {
+        if (filterKey === key) continue;
+        const values = filterValues as string[];
+        if (values.length > 0 && !values.includes(String(lb[filterKey as keyof LoadBoard] || ''))) {
+          return false;
+        }
+      }
+      return true;
+    });
+    return Array.from(new Set(filtered.map(lb => String(lb[key] || '')).filter(Boolean))).sort();
+  };
+
+  const currentFilters = {
+    projectName: filterProjectNames,
+    lbName: filterLBNames,
+    lbGroup: filterLBGroups,
+    location: filterLocations
+  };
+
+  const uniqueProjectNames = React.useMemo(() => getUniqueValues('projectName', currentFilters), [loadBoards, filterLBNames, filterLBGroups, filterLocations]);
+  const uniqueLBNames = React.useMemo(() => getUniqueValues('lbName', currentFilters), [loadBoards, filterProjectNames, filterLBGroups, filterLocations]);
+  const uniqueLBGroups = React.useMemo(() => getUniqueValues('lbGroup', currentFilters), [loadBoards, filterProjectNames, filterLBNames, filterLocations]);
+  const uniqueLocations = React.useMemo(() => getUniqueValues('location', currentFilters), [loadBoards, filterProjectNames, filterLBNames, filterLBGroups]);
 
   const stats = React.useMemo(() => {
     return loadBoards.reduce((acc, lb) => {
@@ -182,7 +206,7 @@ export default function LoadBoardInfo({ isAdmin, selectedFacility }: { isAdmin: 
     });
   }, [loadBoards, searchTerm, filterProjectNames, filterLBNames, filterLBGroups, filterLocations]);
 
-  const columns = [
+  const allColumns = [
     { key: 'facility', label: 'Facility' },
     { key: 'projectName', label: 'Project Name' },
     { key: 'lbName', label: 'LB Name' },
@@ -194,6 +218,8 @@ export default function LoadBoardInfo({ isAdmin, selectedFacility }: { isAdmin: 
     { key: 'sendBackDate', label: 'Send Back Date' },
     { key: 'targetReturnDate', label: 'Target Return Date' },
   ];
+
+  const columns = allColumns.filter(col => visibleColumns.includes(col.key));
 
   if (loading) {
     return (
@@ -251,6 +277,16 @@ export default function LoadBoardInfo({ isAdmin, selectedFacility }: { isAdmin: 
               onChange={setFilterLocations}
               options={uniqueLocations}
               placeholder="All Locations"
+            />
+            <div className="w-px h-4 bg-zinc-200 mx-1"></div>
+            <MultiSelectDropdown
+              values={allColumns.filter(c => visibleColumns.includes(c.key)).map(c => c.label)}
+              onChange={(labels) => {
+                const newVisible = allColumns.filter(c => labels.includes(c.label)).map(c => c.key);
+                setVisibleColumns(newVisible);
+              }}
+              options={allColumns.map(c => c.label)}
+              placeholder="Columns"
             />
           </div>
           <div className="relative group">

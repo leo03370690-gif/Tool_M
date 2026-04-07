@@ -119,6 +119,9 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   const [filterChangeKitGroups, setFilterChangeKitGroups] = usePersistentState<string[]>('productInfo_filterChangeKitGroups', []);
   const [filterLBGroups, setFilterLBGroups] = usePersistentState<string[]>('productInfo_filterLBGroups', []);
   const [displayCount, setDisplayCount] = useState(100);
+  const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('productInfo_visibleColumns', [
+    'facility', 'device', 'projectName', 'nickname', 'tester', 'handler', 'temperature', 'insertion', 'siteNumber', 'ballCountDevice', 'changeKitGroup', 'kitName1', 'kitName2', 'kitName3', 'kitName4', 'lbGroup', 'socketName1', 'socketName2'
+  ]);
 
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
 
@@ -158,11 +161,50 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
     }
   };
 
-  const uniqueDevices = React.useMemo(() => Array.from(new Set(products.map(p => String(p.device || '')).filter(Boolean))).sort(), [products]);
-  const uniqueProjectNames = React.useMemo(() => Array.from(new Set(products.map(p => String(p.projectName || '')).filter(Boolean))).sort(), [products]);
-  const uniqueNicknames = React.useMemo(() => Array.from(new Set(products.map(p => String(p.nickname || '')).filter(Boolean))).sort(), [products]);
-  const uniqueChangeKitGroups = React.useMemo(() => Array.from(new Set(products.map(p => String(p.changeKitGroup || '')).filter(Boolean))).sort(), [products]);
-  const uniqueLBGroups = React.useMemo(() => Array.from(new Set(products.map(p => String(p.lbGroup || '')).filter(Boolean))).sort(), [products]);
+  const getUniqueValues = (field: keyof Product, otherFilters: Record<string, string[]>) => {
+    const filtered = products.filter(p => {
+      return Object.entries(otherFilters).every(([f, vals]) => {
+        if (vals.length === 0) return true;
+        return vals.includes(String(p[f as keyof Product] || ''));
+      });
+    });
+    return Array.from(new Set(filtered.map(p => String(p[field] || '')).filter(Boolean))).sort();
+  };
+
+  const uniqueDevices = React.useMemo(() => getUniqueValues('device', {
+    projectName: filterProjectNames,
+    nickname: filterNicknames,
+    changeKitGroup: filterChangeKitGroups,
+    lbGroup: filterLBGroups
+  }), [products, filterProjectNames, filterNicknames, filterChangeKitGroups, filterLBGroups]);
+
+  const uniqueProjectNames = React.useMemo(() => getUniqueValues('projectName', {
+    device: filterDevices,
+    nickname: filterNicknames,
+    changeKitGroup: filterChangeKitGroups,
+    lbGroup: filterLBGroups
+  }), [products, filterDevices, filterNicknames, filterChangeKitGroups, filterLBGroups]);
+
+  const uniqueNicknames = React.useMemo(() => getUniqueValues('nickname', {
+    device: filterDevices,
+    projectName: filterProjectNames,
+    changeKitGroup: filterChangeKitGroups,
+    lbGroup: filterLBGroups
+  }), [products, filterDevices, filterProjectNames, filterChangeKitGroups, filterLBGroups]);
+
+  const uniqueChangeKitGroups = React.useMemo(() => getUniqueValues('changeKitGroup', {
+    device: filterDevices,
+    projectName: filterProjectNames,
+    nickname: filterNicknames,
+    lbGroup: filterLBGroups
+  }), [products, filterDevices, filterProjectNames, filterNicknames, filterLBGroups]);
+
+  const uniqueLBGroups = React.useMemo(() => getUniqueValues('lbGroup', {
+    device: filterDevices,
+    projectName: filterProjectNames,
+    nickname: filterNicknames,
+    changeKitGroup: filterChangeKitGroups
+  }), [products, filterDevices, filterProjectNames, filterNicknames, filterChangeKitGroups]);
 
   const filteredProducts = React.useMemo(() => {
     return products.filter(p => {
@@ -180,7 +222,7 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
     });
   }, [products, searchTerm, filterDevices, filterProjectNames, filterNicknames, filterChangeKitGroups, filterLBGroups]);
 
-  const columns = [
+  const allColumns = [
     { key: 'facility', label: 'Facility' },
     { key: 'device', label: 'Device' },
     { key: 'projectName', label: 'Project name' },
@@ -200,6 +242,8 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
     { key: 'socketName1', label: 'Socket Name1' },
     { key: 'socketName2', label: 'Socket Name2' },
   ];
+
+  const columns = allColumns.filter(col => visibleColumns.includes(col.key));
 
   return (
     <div className="space-y-8">
@@ -257,6 +301,16 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
               onChange={setFilterLBGroups}
               options={uniqueLBGroups}
               placeholder="All LB Groups"
+            />
+            <div className="w-px h-4 bg-zinc-200 mx-1"></div>
+            <MultiSelectDropdown
+              values={allColumns.filter(c => visibleColumns.includes(c.key)).map(c => c.label)}
+              onChange={(labels) => {
+                const keys = allColumns.filter(c => labels.includes(c.label)).map(c => c.key);
+                setVisibleColumns(keys);
+              }}
+              options={allColumns.map(c => c.label)}
+              placeholder="Columns"
             />
           </div>
           <div className="relative group">

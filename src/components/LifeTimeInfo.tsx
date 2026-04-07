@@ -98,6 +98,9 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
   const [filterSocketGroups, setFilterSocketGroups] = usePersistentState<string[]>('lifeTimeInfo_filterSocketGroups', []);
   const [filterPogoPin1Pns, setFilterPogoPin1Pns] = usePersistentState<string[]>('lifeTimeInfo_filterPogoPin1Pns', []);
   const [filterLoadBoardGroups, setFilterLoadBoardGroups] = usePersistentState<string[]>('lifeTimeInfo_filterLoadBoardGroups', []);
+  const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('lifeTimeInfo_visibleColumns', [
+    'facility', 'socketGroup', 'pogoPin1Pn', 'pogoPinQty', 'lifeTime', 'loadBoardGroup', 'remark'
+  ]);
   const [displayCount, setDisplayCount] = useState(100);
 
   useEffect(() => {
@@ -127,9 +130,29 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
     }
   };
 
-  const uniqueSocketGroups = React.useMemo(() => Array.from(new Set(records.map(r => String(r.socketGroup || '')).filter(Boolean))).sort(), [records]);
-  const uniquePogoPin1Pns = React.useMemo(() => Array.from(new Set(records.map(r => String(r.pogoPin1Pn || '')).filter(Boolean))).sort(), [records]);
-  const uniqueLoadBoardGroups = React.useMemo(() => Array.from(new Set(records.map(r => String(r.loadBoardGroup || '')).filter(Boolean))).sort(), [records]);
+  const getUniqueValues = (key: keyof LifeTime, currentFilters: any) => {
+    const filtered = records.filter(r => {
+      for (const [filterKey, filterValues] of Object.entries(currentFilters)) {
+        if (filterKey === key) continue;
+        const values = filterValues as string[];
+        if (values.length > 0 && !values.includes(String(r[filterKey as keyof LifeTime] || ''))) {
+          return false;
+        }
+      }
+      return true;
+    });
+    return Array.from(new Set(filtered.map(r => String(r[key] || '')).filter(Boolean))).sort();
+  };
+
+  const currentFilters = {
+    socketGroup: filterSocketGroups,
+    pogoPin1Pn: filterPogoPin1Pns,
+    loadBoardGroup: filterLoadBoardGroups
+  };
+
+  const uniqueSocketGroups = React.useMemo(() => getUniqueValues('socketGroup', currentFilters), [records, filterPogoPin1Pns, filterLoadBoardGroups]);
+  const uniquePogoPin1Pns = React.useMemo(() => getUniqueValues('pogoPin1Pn', currentFilters), [records, filterSocketGroups, filterLoadBoardGroups]);
+  const uniqueLoadBoardGroups = React.useMemo(() => getUniqueValues('loadBoardGroup', currentFilters), [records, filterSocketGroups, filterPogoPin1Pns]);
 
   const filteredRecords = React.useMemo(() => {
     return records.filter(r => {
@@ -144,7 +167,7 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
     });
   }, [records, searchTerm, filterSocketGroups, filterPogoPin1Pns, filterLoadBoardGroups]);
 
-  const columns = [
+  const allColumns = [
     { key: 'facility', label: 'Facility' },
     { key: 'socketGroup', label: 'Socket group' },
     { key: 'pogoPin1Pn', label: 'Pogo pin 1 P/N' },
@@ -153,6 +176,8 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
     { key: 'loadBoardGroup', label: 'Load board group' },
     { key: 'remark', label: 'Remark' },
   ];
+
+  const columns = allColumns.filter(col => visibleColumns.includes(col.key));
 
   return (
     <div className="space-y-8">
@@ -194,6 +219,16 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
               onChange={setFilterLoadBoardGroups}
               options={uniqueLoadBoardGroups}
               placeholder="All Load Board Groups"
+            />
+            <div className="w-px h-4 bg-zinc-200 mx-1"></div>
+            <MultiSelectDropdown
+              values={allColumns.filter(c => visibleColumns.includes(c.key)).map(c => c.label)}
+              onChange={(labels) => {
+                const newVisible = allColumns.filter(c => labels.includes(c.label)).map(c => c.key);
+                setVisibleColumns(newVisible);
+              }}
+              options={allColumns.map(c => c.label)}
+              placeholder="Columns"
             />
           </div>
           <div className="relative group">

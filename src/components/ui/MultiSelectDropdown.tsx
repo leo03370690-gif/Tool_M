@@ -2,7 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-export function MultiSelectDropdown({ values, onChange, options, placeholder }: { values: string[], onChange: (vals: string[]) => void, options: string[], placeholder: string }) {
+export function MultiSelectDropdown({ 
+  values, 
+  onChange, 
+  options, 
+  placeholder, 
+  labels = {}, 
+  icon 
+}: { 
+  values: string[], 
+  onChange: (vals: string[]) => void, 
+  options: string[], 
+  placeholder: string,
+  labels?: Record<string, string>,
+  icon?: React.ReactNode
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -18,7 +32,7 @@ export function MultiSelectDropdown({ values, onChange, options, placeholder }: 
   }, []);
 
   const filteredOptions = options.filter(opt => 
-    String(opt).toLowerCase().includes(search.toLowerCase())
+    String(labels[opt] || opt).toLowerCase().includes(search.toLowerCase())
   );
 
   const toggleOption = (opt: string) => {
@@ -30,11 +44,13 @@ export function MultiSelectDropdown({ values, onChange, options, placeholder }: 
     }
   };
 
+  const getLabel = (val: string) => labels[val] || String(val);
+
   const displayValue = values.length === 0 
     ? placeholder 
     : values.length === 1 
-      ? String(values[0]) 
-      : `${String(values[0])} (+${values.length - 1})`;
+      ? getLabel(values[0]) 
+      : `${getLabel(values[0])} (+${values.length - 1})`;
 
   return (
     <div className="relative" ref={ref}>
@@ -45,12 +61,15 @@ export function MultiSelectDropdown({ values, onChange, options, placeholder }: 
           values.length > 0 ? "text-brand-primary font-medium" : "text-zinc-700"
         )}
       >
-        <span className="truncate max-w-[120px]">{displayValue}</span>
+        <div className="flex items-center gap-2">
+          {icon}
+          <span className="truncate max-w-[120px]">{displayValue}</span>
+        </div>
         <ChevronDown className="w-4 h-4 ml-2 opacity-50" />
       </button>
       
       {isOpen && (
-        <div className="absolute z-50 w-64 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-80 flex flex-col">
+        <div className="absolute z-50 w-64 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-80 flex flex-col right-0">
           <div className="p-2 border-b border-zinc-100">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
@@ -86,6 +105,7 @@ export function MultiSelectDropdown({ values, onChange, options, placeholder }: 
             </button>
             {filteredOptions.map(opt => {
               const isSelected = values.includes(opt);
+              const label = getLabel(opt);
               return (
                 <button
                   key={opt}
@@ -97,7 +117,7 @@ export function MultiSelectDropdown({ values, onChange, options, placeholder }: 
                     e.stopPropagation();
                     toggleOption(opt);
                   }}
-                  title={opt}
+                  title={label}
                 >
                   <div className={cn(
                     "w-4 h-4 rounded border mr-2 flex items-center justify-center flex-shrink-0",
@@ -105,7 +125,7 @@ export function MultiSelectDropdown({ values, onChange, options, placeholder }: 
                   )}>
                     {isSelected && <Check className="w-3 h-3" />}
                   </div>
-                  <span className="truncate flex-1 text-left">{opt}</span>
+                  <span className="truncate flex-1 text-left">{label}</span>
                 </button>
               );
             })}

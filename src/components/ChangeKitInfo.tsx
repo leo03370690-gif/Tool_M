@@ -99,6 +99,9 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
   const [filterToolsIds, setFilterToolsIds] = usePersistentState<string[]>('changeKitInfo_filterToolsIds', []);
   const [filterChangeKitGroups, setFilterChangeKitGroups] = usePersistentState<string[]>('changeKitInfo_filterChangeKitGroups', []);
   const [filterStatuses, setFilterStatuses] = usePersistentState<string[]>('changeKitInfo_filterStatuses', []);
+  const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('changeKitInfo_visibleColumns', [
+    'facility', 'location', 'kind', 'toolsId', 'packageSize', 'changeKitGroup', 'status', 'idleTime'
+  ]);
   const [displayCount, setDisplayCount] = useState(100);
 
   useEffect(() => {
@@ -128,9 +131,29 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
     }
   };
 
-  const uniqueToolsIds = React.useMemo(() => Array.from(new Set(kits.map(k => String(k.toolsId || '')).filter(Boolean))).sort(), [kits]);
-  const uniqueChangeKitGroups = React.useMemo(() => Array.from(new Set(kits.map(k => String(k.changeKitGroup || '')).filter(Boolean))).sort(), [kits]);
-  const uniqueStatuses = React.useMemo(() => Array.from(new Set(kits.map(k => String(k.status || '')).filter(Boolean))).sort(), [kits]);
+  const getUniqueValues = (key: keyof ChangeKit, currentFilters: any) => {
+    const filtered = kits.filter(k => {
+      for (const [filterKey, filterValues] of Object.entries(currentFilters)) {
+        if (filterKey === key) continue;
+        const values = filterValues as string[];
+        if (values.length > 0 && !values.includes(String(k[filterKey as keyof ChangeKit] || ''))) {
+          return false;
+        }
+      }
+      return true;
+    });
+    return Array.from(new Set(filtered.map(k => String(k[key] || '')).filter(Boolean))).sort();
+  };
+
+  const currentFilters = {
+    toolsId: filterToolsIds,
+    changeKitGroup: filterChangeKitGroups,
+    status: filterStatuses
+  };
+
+  const uniqueToolsIds = React.useMemo(() => getUniqueValues('toolsId', currentFilters), [kits, filterChangeKitGroups, filterStatuses]);
+  const uniqueChangeKitGroups = React.useMemo(() => getUniqueValues('changeKitGroup', currentFilters), [kits, filterToolsIds, filterStatuses]);
+  const uniqueStatuses = React.useMemo(() => getUniqueValues('status', currentFilters), [kits, filterToolsIds, filterChangeKitGroups]);
 
   const stats = React.useMemo(() => {
     return kits.reduce((acc, kit) => {
@@ -164,7 +187,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
     });
   }, [kits, searchTerm, filterToolsIds, filterChangeKitGroups, filterStatuses]);
 
-  const columns = [
+  const allColumns = [
     { key: 'facility', label: 'Facility' },
     { key: 'location', label: 'Location' },
     { key: 'kind', label: 'Kind' },
@@ -174,6 +197,8 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
     { key: 'status', label: 'Status' },
     { key: 'idleTime', label: 'Idle Time' },
   ];
+
+  const columns = allColumns.filter(col => visibleColumns.includes(col.key));
 
   return (
     <div className="space-y-8">
@@ -215,6 +240,16 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
               onChange={setFilterStatuses}
               options={uniqueStatuses}
               placeholder="All Statuses"
+            />
+            <div className="w-px h-4 bg-zinc-200 mx-1"></div>
+            <MultiSelectDropdown
+              values={allColumns.filter(c => visibleColumns.includes(c.key)).map(c => c.label)}
+              onChange={(labels) => {
+                const newVisible = allColumns.filter(c => labels.includes(c.label)).map(c => c.key);
+                setVisibleColumns(newVisible);
+              }}
+              options={allColumns.map(c => c.label)}
+              placeholder="Columns"
             />
           </div>
           <div className="relative group">
