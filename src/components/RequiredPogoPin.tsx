@@ -379,6 +379,101 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
     return result;
   }, [detailedSummaryData, detailedSearchTerm, filterPogoPins, filterNicknames, filterDevices, filterInsertions, filterRequiredQty, sortConfig]);
 
+  const handleExportDetailed = () => {
+    const exportData: any[] = [];
+    const merges: any[] = [];
+    let currentRow = 1; // Start after header
+
+    filteredDetailedSummaryData.forEach(group => {
+      const groupStartRow = currentRow;
+      const detailsCount = group.details.length || 1;
+
+      if (group.details.length === 0) {
+        exportData.push({
+          'Pogo Pin PN': group.pinName,
+          'Final Required': group.final,
+          'Total Required': group.required,
+          'On Hand': group.onHand,
+          'Nickname': 'No device details found',
+          'Device': '',
+          'Insertion': '',
+          'Site': '',
+          'FCST Qty': '',
+          'Lifetime': '',
+          'Required pin qty in one socket': ''
+        });
+        currentRow++;
+      } else {
+        // Track merges for Nickname and Device within the group
+        let nicknameStartRow = currentRow;
+        let deviceStartRow = currentRow;
+
+        group.details.forEach((detail, detailIndex) => {
+          const isFirstInGroup = detailIndex === 0;
+          
+          // Check for Nickname change
+          if (detailIndex > 0 && detail.nickName !== group.details[detailIndex - 1].nickName) {
+            if (currentRow - 1 > nicknameStartRow) {
+              merges.push({ s: { r: nicknameStartRow, c: 4 }, e: { r: currentRow - 1, c: 4 } });
+            }
+            nicknameStartRow = currentRow;
+          }
+
+          // Check for Device change (within same nickname)
+          if (detailIndex > 0 && (detail.device !== group.details[detailIndex - 1].device || detail.nickName !== group.details[detailIndex - 1].nickName)) {
+            if (currentRow - 1 > deviceStartRow) {
+              merges.push({ s: { r: deviceStartRow, c: 5 }, e: { r: currentRow - 1, c: 5 } });
+            }
+            deviceStartRow = currentRow;
+          }
+
+          exportData.push({
+            'Pogo Pin PN': isFirstInGroup ? group.pinName : '',
+            'Final Required': isFirstInGroup ? group.final : '',
+            'Total Required': isFirstInGroup ? group.required : '',
+            'On Hand': isFirstInGroup ? group.onHand : '',
+            'Nickname': detail.nickName,
+            'Device': detail.device,
+            'Insertion': detail.insertion,
+            'Site': detail.site,
+            'FCST Qty': detail.fcst,
+            'Lifetime': detail.lifetime,
+            'Required pin qty in one socket': detail.reqPinQtyInOneSocket
+          });
+          currentRow++;
+
+          // Handle last detail in group for nickname/device merges
+          if (detailIndex === group.details.length - 1) {
+            if (currentRow - 1 > nicknameStartRow) {
+              merges.push({ s: { r: nicknameStartRow, c: 4 }, e: { r: currentRow - 1, c: 4 } });
+            }
+            if (currentRow - 1 > deviceStartRow) {
+              merges.push({ s: { r: deviceStartRow, c: 5 }, e: { r: currentRow - 1, c: 5 } });
+            }
+          }
+        });
+
+        // Add merges for the main group columns (0 to 3)
+        if (detailsCount > 1) {
+          for (let col = 0; col <= 3; col++) {
+            merges.push({ s: { r: groupStartRow, c: col }, e: { r: currentRow - 1, c: col } });
+          }
+        }
+      }
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    ws['!merges'] = merges;
+
+    // Add basic styling for alignment (center) if possible with SheetJS
+    // Note: Standard xlsx library (SheetJS) doesn't support styling in the free version
+    // but merges will at least group the cells.
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Detailed Analysis');
+    XLSX.writeFile(wb, `PogoPin_Detailed_Analysis_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   const handleSort = (key: string) => {
     setSortConfig(current => {
       if (current?.key === key) {
@@ -617,6 +712,13 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
                 <p className="text-sm text-zinc-500">Comprehensive breakdown of pogo pin requirements by device and insertion</p>
               </div>
               <div className="flex items-center gap-3">
+                <button
+                  onClick={handleExportDetailed}
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-xl hover:bg-brand-primary/90 transition-all shadow-sm hover:shadow-md active:scale-95 font-medium"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  <span>Export Excel</span>
+                </button>
                 <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-xl px-2 py-1 shadow-sm">
                   <button
                     onClick={() => {
