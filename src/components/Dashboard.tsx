@@ -49,20 +49,20 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
   const isAdmin = role === 'admin';
 
   const menuItems = [
-    { id: 'product', label: 'Product Info', icon: Box, color: 'text-blue-500' },
-    { id: 'socket', label: 'Socket Info', icon: Cpu, color: 'text-purple-500' },
-    { id: 'change-kit', label: 'Change Kit', icon: Wrench, color: 'text-orange-500' },
-    { id: 'pogo-pin', label: 'Pogo Pin', icon: Database, color: 'text-emerald-500' },
-    { id: 'life-time', label: 'Life Time', icon: Clock, color: 'text-rose-500' },
-    { id: 'load-board', label: 'Load Board', icon: Layers, color: 'text-indigo-500' },
-    { id: 'required-pogo-pin', label: 'Required Pogo Pin', icon: Calculator, color: 'text-teal-500' },
-    { id: 'settings', label: 'Settings', icon: Settings, color: 'text-zinc-500' },
+    { id: 'product', label: 'Product Info', icon: Box },
+    { id: 'socket', label: 'Socket Info', icon: Cpu },
+    { id: 'change-kit', label: 'Change Kit', icon: Wrench },
+    { id: 'pogo-pin', label: 'Pogo Pin', icon: Database },
+    { id: 'life-time', label: 'Life Time', icon: Clock },
+    { id: 'load-board', label: 'Load Board', icon: Layers },
+    { id: 'required-pogo-pin', label: 'Required Pogo Pin', icon: Calculator },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   if (isAdmin) {
-    menuItems.push({ id: 'data-management', label: 'Data Management', icon: DatabaseBackup, color: 'text-zinc-500' });
-    menuItems.push({ id: 'users', label: 'User Management', icon: Users, color: 'text-zinc-500' });
-    menuItems.push({ id: 'audit-logs', label: 'Audit Logs', icon: Clock, color: 'text-zinc-500' });
+    menuItems.push({ id: 'data-management', label: 'Data Management', icon: DatabaseBackup });
+    menuItems.push({ id: 'users', label: 'User Management', icon: Users });
+    menuItems.push({ id: 'audit-logs', label: 'Audit Logs', icon: Clock });
   }
 
   const handleLogout = () => signOut(auth);
@@ -73,7 +73,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
       <motion.aside 
         initial={false}
         animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="flex flex-col border-r border-zinc-200 bg-white shadow-xl shadow-black/5 z-20"
+        className="flex flex-col border-r border-zinc-200/80 bg-white z-20"
       >
         <div className="flex h-20 items-center justify-between px-6">
           {isSidebarOpen ? (
@@ -106,7 +106,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
                   : "text-zinc-500 hover:bg-zinc-100 hover:text-brand-primary"
               )}
             >
-              <item.icon className={cn("h-5 w-5 shrink-0 transition-transform group-hover:scale-110", activeTab === item.id ? "text-white" : item.color)} />
+              <item.icon className={cn("h-5 w-5 shrink-0 transition-transform group-hover:scale-110", activeTab === item.id ? "text-brand-primary" : "text-zinc-400")} />
               {isSidebarOpen && (
                 <motion.span 
                   initial={{ opacity: 0, x: -10 }}
@@ -117,7 +117,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
                 </motion.span>
               )}
               {isSidebarOpen && activeTab === item.id && (
-                <motion.div layoutId="active-pill" className="h-1.5 w-1.5 rounded-full bg-white" />
+                <motion.div layoutId="active-pill" className="h-1.5 w-1.5 rounded-full bg-brand-primary" />
               )}
             </button>
           ))}
@@ -167,12 +167,12 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
             </div>
             <div className="h-6 w-px bg-zinc-200 mx-2" />
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-brand-primary bg-brand-primary/10 px-3 py-1 rounded-full">
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 bg-zinc-100 border border-zinc-200/80 px-3 py-1.5 rounded-full">
                 Facility: {selectedFacility}
               </span>
               <button 
                 onClick={onBackToFacility}
-                className="text-xs font-bold text-zinc-500 hover:text-zinc-900 transition-colors px-3 py-1 bg-white border border-zinc-200 rounded-full shadow-sm"
+                className="text-xs font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 transition-colors px-3 py-1.5 bg-white border border-zinc-200 rounded-full shadow-sm hover:bg-zinc-50"
               >
                 Change
               </button>

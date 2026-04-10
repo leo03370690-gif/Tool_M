@@ -263,7 +263,7 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
         )}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-white p-2 rounded-2xl border border-zinc-100 shadow-sm">
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between surface-card p-2">
         <div className="flex flex-wrap items-center gap-2 flex-1 w-full lg:w-auto pb-2 lg:pb-0">
           <div className="flex items-center gap-1.5 px-2">
             <Filter className="h-3.5 w-3.5 text-zinc-400" />
@@ -337,7 +337,7 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-100 bg-white">
+      <div className="relative overflow-hidden surface-card">
         <DoubleScrollbar>
           <table className="w-full text-left text-sm border-collapse">
             <thead>

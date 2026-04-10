@@ -94,7 +94,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F0]">
+    <div className="min-h-screen bg-bg-canvas">
       <AnimatePresence>
         {quotaExceeded && (
           <motion.div

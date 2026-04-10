@@ -678,28 +678,26 @@ export default function DataManagement() {
       className="space-y-8 max-w-4xl"
     >
       {/* Quota Info */}
-      <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4 flex items-start gap-4 shadow-sm">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+      <div className="surface-card p-4 flex items-start gap-4 border-l-4 border-l-amber-500">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
           <AlertTriangle className="h-4 w-4" />
         </div>
         <div>
-          <h4 className="text-sm font-bold text-amber-900">Firestore Free Tier Quota Notice</h4>
-          <p className="text-xs text-amber-700 leading-relaxed mt-1">
+          <h4 className="text-sm font-bold text-zinc-900">Firestore Free Tier Quota Notice</h4>
+          <p className="text-xs text-zinc-500 leading-relaxed mt-1">
             The Firebase free tier includes <strong>20,000 write operations per day</strong>. 
             Large imports or clearing large collections will consume this quota. 
             <br />
-            <span className="font-semibold text-amber-800">Current Status:</span> If you encounter "Quota limit exceeded", please wait 24 hours for the limit to reset.
+            <span className="font-semibold text-zinc-700">Current Status:</span> If you encounter "Quota limit exceeded", please wait 24 hours for the limit to reset.
           </p>
         </div>
       </div>
 
       {/* Import Section */}
-      <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
-        
+      <div className="surface-card p-8 relative overflow-hidden">
         <div className="mb-8 flex items-center justify-between border-b border-zinc-100 pb-6">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-brand-primary">
               <FileSpreadsheet className="h-6 w-6" />
             </div>
             <div>
@@ -725,7 +723,7 @@ export default function DataManagement() {
               <select
                 value={importMode}
                 onChange={(e) => setImportMode(e.target.value as 'auto' | 'specific')}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all appearance-none"
+                className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all appearance-none"
               >
                 <option value="auto">Auto-Detect Sheets</option>
                 <option value="specific">Import to Specific Page</option>
@@ -751,7 +749,7 @@ export default function DataManagement() {
               <select
                 value={targetCollection}
                 onChange={(e) => setTargetCollection(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all appearance-none"
+                className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all appearance-none"
               >
                 {COLLECTIONS.map(col => (
                   <option key={col.id} value={col.id}>{col.label}</option>
@@ -771,7 +769,7 @@ export default function DataManagement() {
                 multiple
                 ref={fileInputRef}
                 onChange={(e) => setFiles(e.target.files)}
-                className="w-full rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/30 px-4 py-8 text-sm transition-all hover:border-blue-400 hover:bg-blue-50/30 focus:outline-none file:mr-4 file:rounded-full file:border-0 file:bg-blue-600 file:px-6 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-blue-700 cursor-pointer"
+                className="w-full rounded-xl border-2 border-dashed border-zinc-200/80 bg-zinc-50/30 px-4 py-8 text-sm transition-all hover:border-brand-primary/50 hover:bg-zinc-50 focus:outline-none file:mr-4 file:rounded-full file:border-0 file:bg-brand-primary file:px-6 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-zinc-800 cursor-pointer"
               />
               {!files && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-zinc-400 text-xs font-medium">
@@ -782,7 +780,7 @@ export default function DataManagement() {
             {files && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {Array.from(files as any).map((file: any, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold text-blue-700 border border-blue-100">
+                  <span key={idx} className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-bold text-zinc-700 border border-zinc-200/80">
                     <FileSpreadsheet className="h-3 w-3" />
                     {file.name}
                   </span>
@@ -800,7 +798,7 @@ export default function DataManagement() {
               value={globalFacility}
               onChange={(e) => setGlobalFacility(e.target.value)}
               placeholder="e.g. FACILITY_A"
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
+              className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all"
             />
             <p className="text-[10px] text-zinc-400 ml-1">If set, all imported records will be assigned this facility name.</p>
           </div>
@@ -816,7 +814,7 @@ export default function DataManagement() {
                 onChange={(e) => setClearBeforeImport(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
               <label htmlFor="clearBeforeImport" className="ml-3 text-sm font-medium text-zinc-700">
                 Clear existing data before importing
               </label>
@@ -826,7 +824,7 @@ export default function DataManagement() {
           <button
             onClick={handleImportClick}
             disabled={loading || !files || files.length === 0}
-            className="flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-blue-700 disabled:opacity-50 shadow-lg shadow-blue-600/20"
+            className="flex items-center gap-2 rounded-xl bg-brand-primary px-8 py-3 text-sm font-bold text-white transition-all hover:bg-zinc-800 disabled:opacity-50 shadow-lg shadow-brand-primary/20 active:scale-[0.98]"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             {loading ? 'Processing...' : 'Start Import'}
@@ -835,11 +833,9 @@ export default function DataManagement() {
       </div>
 
       {/* Clear Section */}
-      <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500" />
-        
+      <div className="surface-card p-8 relative overflow-hidden">
         <div className="mb-8 flex items-center gap-4 border-b border-zinc-100 pb-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-brand-primary">
             <DatabaseBackup className="h-6 w-6" />
           </div>
           <div>
@@ -856,7 +852,7 @@ export default function DataManagement() {
             <select
               value={clearTarget}
               onChange={(e) => setClearTarget(e.target.value)}
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/10 transition-all appearance-none"
+              className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all appearance-none"
             >
               <option value="all">⚠️ ALL SECTIONS (Clear Everything)</option>
               {COLLECTIONS.map(col => (
@@ -869,7 +865,7 @@ export default function DataManagement() {
             <button
               onClick={handleClearClick}
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:opacity-50 shadow-lg shadow-red-600/20"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:opacity-50 shadow-lg shadow-red-600/20 active:scale-[0.98]"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
               {loading ? 'Processing...' : 'Clear Selected Data'}
@@ -887,7 +883,7 @@ export default function DataManagement() {
               value={deleteFacility}
               onChange={(e) => setDeleteFacility(e.target.value)}
               placeholder="Enter Facility name..."
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/10 transition-all"
+              className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all"
             />
           </div>
 
@@ -895,7 +891,7 @@ export default function DataManagement() {
             <button
               onClick={handleClearByFacilityClick}
               disabled={loading || !deleteFacility.trim()}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-orange-700 disabled:opacity-50 shadow-lg shadow-orange-600/20"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:opacity-50 shadow-lg shadow-red-600/20 active:scale-[0.98]"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
               {loading ? 'Processing...' : 'Delete Facility Data'}

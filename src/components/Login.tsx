@@ -97,38 +97,38 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F5F5F0] p-4 font-sans selection:bg-zinc-900 selection:text-white">
+    <div className="flex min-h-screen items-center justify-center bg-bg-canvas p-4 font-sans selection:bg-zinc-900 selection:text-white relative overflow-hidden">
+      {/* Subtle Background Pattern */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+      
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl ring-1 ring-black/5"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="w-full max-w-md relative z-10"
       >
-        <div className="bg-[#141414] p-10 text-center text-white relative overflow-hidden">
-          {/* Decorative background elements */}
-          <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-            <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-white blur-3xl" />
-            <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-white blur-3xl" />
+        <div className="surface-card p-10 shadow-2xl shadow-black/[0.03]">
+          <div className="text-center mb-10">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-primary text-white shadow-lg shadow-brand-primary/20"
+            >
+              <ShieldCheck className="h-8 w-8" />
+            </motion.div>
+            <motion.div
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h1 className="font-serif text-4xl italic tracking-tight text-zinc-900">Tooling Matrix</h1>
+              <p className="mt-3 text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-bold">
+                Management System v2.0
+              </p>
+            </motion.div>
           </div>
 
-          <motion.div 
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="relative z-10"
-          >
-            <div className="mb-6 flex justify-center">
-              <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-md ring-1 ring-white/20">
-                <ShieldCheck className="h-10 w-10 text-white" />
-              </div>
-            </div>
-            <h1 className="font-serif text-4xl italic tracking-tight">Tooling Matrix</h1>
-            <p className="mt-3 text-[10px] text-zinc-400 uppercase tracking-[0.3em] font-bold">
-              Management System v2.0
-            </p>
-          </motion.div>
-        </div>
-
-        <div className="p-10">
           <AnimatePresence mode="wait">
             {!showResetModal ? (
               <motion.form 
@@ -162,7 +162,7 @@ export default function Login() {
                       required
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-11 py-3.5 text-sm transition-all focus:border-zinc-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-zinc-900/5"
+                      className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-11 py-3.5 text-sm transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-primary/10 hover:bg-zinc-50"
                       placeholder="e.g. Leo.Lo"
                     />
                   </div>
@@ -186,7 +186,7 @@ export default function Login() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-11 py-3.5 text-sm transition-all focus:border-zinc-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-zinc-900/5"
+                      className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-11 py-3.5 text-sm transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-primary/10 hover:bg-zinc-50"
                       placeholder="••••••••"
                     />
                   </div>
@@ -197,7 +197,7 @@ export default function Login() {
                   whileTap={{ scale: 0.99 }}
                   type="submit"
                   disabled={loading}
-                  className="flex w-full items-center justify-center gap-3 rounded-xl bg-zinc-900 py-4 text-sm font-bold text-white transition-all hover:bg-zinc-800 disabled:opacity-50 shadow-xl shadow-zinc-900/10"
+                  className="flex w-full items-center justify-center gap-3 rounded-xl bg-brand-primary py-4 text-sm font-bold text-white transition-all hover:bg-zinc-800 disabled:opacity-50 shadow-lg shadow-brand-primary/20 active:scale-[0.98]"
                 >
                   {loading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -258,7 +258,7 @@ export default function Login() {
                       required
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-11 py-3.5 text-sm transition-all focus:border-zinc-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-zinc-900/5"
+                      className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-11 py-3.5 text-sm transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-primary/10 hover:bg-zinc-50"
                       placeholder="your@email.com"
                     />
                   </div>
@@ -269,7 +269,7 @@ export default function Login() {
                   whileTap={{ scale: 0.99 }}
                   type="submit"
                   disabled={resetLoading}
-                  className="flex w-full items-center justify-center gap-3 rounded-xl bg-zinc-900 py-4 text-sm font-bold text-white transition-all hover:bg-zinc-800 disabled:opacity-50 shadow-xl shadow-zinc-900/10"
+                  className="flex w-full items-center justify-center gap-3 rounded-xl bg-brand-primary py-4 text-sm font-bold text-white transition-all hover:bg-zinc-800 disabled:opacity-50 shadow-lg shadow-brand-primary/20 active:scale-[0.98]"
                 >
                   {resetLoading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -284,8 +284,7 @@ export default function Login() {
             )}
           </AnimatePresence>
         </div>
-
-        <div className="border-t border-zinc-100 bg-zinc-50/50 p-6 text-center">
+        <div className="mt-8 text-center">
           <p className="text-[10px] text-zinc-400 uppercase tracking-[0.2em] font-bold">
             Authorized Personnel Only
           </p>

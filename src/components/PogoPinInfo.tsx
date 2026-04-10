@@ -99,12 +99,13 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
             />
             <div className="w-px h-4 bg-zinc-200 mx-1"></div>
             <MultiSelectDropdown
-              values={visibleColumns}
-              onChange={setVisibleColumns}
-              options={columns.map(c => c.key)}
-              labels={columns.reduce((acc, c) => ({ ...acc, [c.key]: c.label }), {})}
+              values={columns.filter(c => visibleColumns.includes(c.key)).map(c => c.label)}
+              onChange={(labels) => {
+                const keys = columns.filter(c => labels.includes(c.label)).map(c => c.key);
+                setVisibleColumns(keys);
+              }}
+              options={columns.map(c => c.label)}
               placeholder="Columns"
-              icon={<List className="h-4 w-4 text-zinc-400" />}
             />
           </div>
           <div className="relative group">
@@ -255,7 +256,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="relative overflow-hidden rounded-2xl border border-zinc-100 bg-white"
+            className="relative overflow-hidden surface-card"
           >
             <DoubleScrollbar>
               <table className="w-full text-left text-sm border-collapse">

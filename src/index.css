@@ -6,9 +6,9 @@
   --font-serif: "Cormorant Garamond", serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --color-brand-primary: #141414;
+  --color-brand-primary: #09090b; /* zinc-950 for deeper contrast */
   --color-brand-accent: #F27D26;
-  --color-bg-canvas: #F5F5F4;
+  --color-bg-canvas: #fafafa; /* slightly lighter, cleaner canvas */
   
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
@@ -22,25 +22,29 @@
 }
 
 .glass {
-  @apply bg-white/70 backdrop-blur-md border border-white/20;
+  @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm;
+}
+
+.surface-card {
+  @apply bg-white rounded-2xl border border-zinc-200/60 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)];
 }
 
 .card-shadow {
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 10px -2px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
 }
 
 .data-grid-row {
-  @apply transition-all duration-200 hover:bg-zinc-50/80;
+  @apply transition-colors duration-200 hover:bg-zinc-50/80 border-b border-zinc-100/80 last:border-0;
 }
 
 .sidebar-item-active {
-  @apply bg-brand-primary text-white shadow-lg shadow-black/10;
+  @apply bg-zinc-100/80 text-brand-primary font-semibold shadow-sm ring-1 ring-zinc-200/50;
 }
 
 /* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
+  height: 6px;
+  width: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -48,12 +52,10 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #d4d4d8; /* zinc-300 */
+  background-color: #e4e4e7; /* zinc-200 */
   border-radius: 20px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #a1a1aa; /* zinc-400 */
+  background-color: #d4d4d8; /* zinc-300 */
 }
