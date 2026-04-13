@@ -439,41 +439,56 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="grid gap-8 md:grid-cols-2 xl:grid-cols-3"
+            className="space-y-8"
           >
-            {Object.entries(stats).map(([location, groups], idx) => (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: idx * 0.1 }}
-                key={location} 
-                className="rounded-3xl border border-zinc-100 bg-white card-shadow overflow-hidden"
-              >
-                <div className="bg-zinc-50/50 px-6 py-4 border-b border-zinc-100">
-                  <h3 className="font-serif italic text-xl text-zinc-900">{location}</h3>
-                </div>
-                <div className="p-6">
-                  <div className="space-y-4">
-                    {Object.entries(groups).map(([group, count]) => (
-                      <div key={group} className="flex items-center justify-between group">
-                        <span className="text-sm text-zinc-500 group-hover:text-brand-primary transition-colors">{group}</span>
-                        <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-900">
-                          {count}
-                        </span>
+            <div className="flex flex-col gap-8">
+              {Object.entries(stats).map(([location, groups], idx) => {
+                const total = Object.values(groups).reduce((a, b) => a + b, 0);
+                const max = Math.max(...Object.values(groups));
+                
+                return (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: idx * 0.1 }}
+                    key={location} 
+                    className="rounded-3xl border border-zinc-100 bg-white card-shadow overflow-hidden flex flex-col"
+                  >
+                    <div className="bg-zinc-50/50 px-6 py-5 border-b border-zinc-100 flex items-center justify-between">
+                      <h3 className="font-serif italic text-2xl text-zinc-900">{location}</h3>
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Total Sockets</span>
+                        <span className="text-xl font-bold text-brand-primary">{total}</span>
                       </div>
-                    ))}
-                    <div className="mt-6 pt-6 border-t border-zinc-100 flex items-center justify-between">
-                      <span className="text-xs font-bold text-zinc-900 uppercase tracking-widest">Total Count</span>
-                      <span className="rounded-full bg-brand-primary px-4 py-1.5 text-xs font-bold text-white shadow-lg shadow-black/10">
-                        {Object.values(groups).reduce((a, b) => a + b, 0)}
-                      </span>
                     </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                    <div className="p-6 md:p-8 flex-1 flex flex-col">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-6 flex-1">
+                        {Object.entries(groups)
+                          .sort((a, b) => b[1] - a[1])
+                          .map(([group, count]) => (
+                          <div key={group} className="space-y-2 group">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-zinc-600 group-hover:text-zinc-900 transition-colors truncate pr-2" title={group}>{group}</span>
+                              <span className="text-sm font-bold text-zinc-900">{count}</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-zinc-100 rounded-full overflow-hidden">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${(count / max) * 100}%` }}
+                                transition={{ duration: 1, ease: "easeOut", delay: idx * 0.1 + 0.2 }}
+                                className="h-full bg-brand-primary rounded-full"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
             {Object.keys(stats).length === 0 && (
-              <div className="col-span-full py-12 text-center text-zinc-500">
+              <div className="py-12 text-center text-zinc-500 bg-white rounded-3xl border border-zinc-100 border-dashed">
                 No statistics available (Facility must equal Location).
               </div>
             )}
