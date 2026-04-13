@@ -55,6 +55,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /requiredPogoPinRows/{rowId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
     match /auditLogs/{logId} {
       allow read: if isAdmin();
       allow write: if isAdmin();

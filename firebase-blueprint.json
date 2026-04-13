@@ -121,6 +121,18 @@
         "sendBackDate": { "type": "string" },
         "targetReturnDate": { "type": "string" }
       }
+    },
+    "RequiredPogoPinRow": {
+      "title": "RequiredPogoPinRow",
+      "description": "Required pogo pin row data",
+      "type": "object",
+      "properties": {
+        "partNo": { "type": "string" },
+        "qty": { "type": ["number", "string"] },
+        "remark": { "type": "string" },
+        "pogoPins": { "type": "array" },
+        "facility": { "type": "string" }
+      }
     }
   },
   "firestore": {
@@ -151,6 +163,10 @@
     "/loadBoards/{loadBoardId}": {
       "schema": "LoadBoard",
       "description": "Load board information records"
+    },
+    "/requiredPogoPinRows/{rowId}": {
+      "schema": "RequiredPogoPinRow",
+      "description": "Required pogo pin rows"
     }
   }
 }
