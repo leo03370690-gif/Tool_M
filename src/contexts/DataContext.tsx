@@ -1,0 +1,103 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+import { db } from '../firebase';
+
+interface DataContextType {
+  products: any[];
+  sockets: any[];
+  changeKits: any[];
+  pogoPins: any[];
+  lifeTimes: any[];
+  loadBoards: any[];
+  requiredPogoPinRows: any[];
+  loading: boolean;
+}
+
+const DataContext = createContext<DataContextType>({
+  products: [],
+  sockets: [],
+  changeKits: [],
+  pogoPins: [],
+  lifeTimes: [],
+  loadBoards: [],
+  requiredPogoPinRows: [],
+  loading: true,
+});
+
+export const useData = () => useContext(DataContext);
+
+export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [products, setProducts] = useState<any[]>([]);
+  const [sockets, setSockets] = useState<any[]>([]);
+  const [changeKits, setChangeKits] = useState<any[]>([]);
+  const [pogoPins, setPogoPins] = useState<any[]>([]);
+  const [lifeTimes, setLifeTimes] = useState<any[]>([]);
+  const [loadBoards, setLoadBoards] = useState<any[]>([]);
+  const [requiredPogoPinRows, setRequiredPogoPinRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let unsubProducts: () => void;
+    let unsubSockets: () => void;
+    let unsubKits: () => void;
+    let unsubPogoPins: () => void;
+    let unsubLifeTimes: () => void;
+    let unsubLoadBoards: () => void;
+    let unsubRequiredPogoPinRows: () => void;
+
+    try {
+      unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+        setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+      unsubSockets = onSnapshot(collection(db, 'sockets'), (snapshot) => {
+        setSockets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+      unsubKits = onSnapshot(collection(db, 'changeKits'), (snapshot) => {
+        setChangeKits(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+      unsubPogoPins = onSnapshot(collection(db, 'pogoPins'), (snapshot) => {
+        setPogoPins(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+      unsubLifeTimes = onSnapshot(collection(db, 'lifeTimes'), (snapshot) => {
+        setLifeTimes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+      unsubLoadBoards = onSnapshot(collection(db, 'loadBoards'), (snapshot) => {
+        setLoadBoards(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+      unsubRequiredPogoPinRows = onSnapshot(collection(db, 'requiredPogoPinRows'), (snapshot) => {
+        setRequiredPogoPinRows(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+
+      // Set loading to false after a short delay to allow initial data to load
+      setTimeout(() => setLoading(false), 800);
+    } catch (error) {
+      console.error("Error setting up data listeners:", error);
+      setLoading(false);
+    }
+
+    return () => {
+      if (unsubProducts) unsubProducts();
+      if (unsubSockets) unsubSockets();
+      if (unsubKits) unsubKits();
+      if (unsubPogoPins) unsubPogoPins();
+      if (unsubLifeTimes) unsubLifeTimes();
+      if (unsubLoadBoards) unsubLoadBoards();
+      if (unsubRequiredPogoPinRows) unsubRequiredPogoPinRows();
+    };
+  }, []);
+
+  return (
+    <DataContext.Provider value={{
+      products,
+      sockets,
+      changeKits,
+      pogoPins,
+      lifeTimes,
+      loadBoards,
+      requiredPogoPinRows,
+      loading
+    }}>
+      {children}
+    </DataContext.Provider>
+  );
+};

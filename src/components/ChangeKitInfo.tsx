@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { Plus, Trash2, Edit2, Search, BarChart2, List, Check, X, Filter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
+import { useData } from '../contexts/DataContext';
 
 interface ChangeKit {
   id: string;
@@ -90,7 +91,17 @@ const KitRow = React.memo(({
 });
 
 export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
-  const [kits, setKits] = useState<ChangeKit[]>([]);
+  const { changeKits: allKits } = useData();
+  
+  const kits = useMemo(() => {
+    let data = [...allKits];
+    if (selectedFacility !== 'ALL') {
+      data = data.filter(k => (k.facility || '').trim().toUpperCase() === selectedFacility);
+    }
+    data.sort((a, b) => (a.toolsId || '').localeCompare(b.toolsId || ''));
+    return data;
+  }, [allKits, selectedFacility]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'stats'>('list');
@@ -103,21 +114,6 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
     'facility', 'location', 'kind', 'toolsId', 'packageSize', 'changeKitGroup', 'status', 'idleTime'
   ]);
   const [displayCount, setDisplayCount] = useState(100);
-
-  useEffect(() => {
-    const q = query(collection(db, 'changeKits'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChangeKit));
-      if (selectedFacility !== 'ALL') {
-        data = data.filter(k => (k.facility || '').trim().toUpperCase() === selectedFacility);
-      }
-      data.sort((a, b) => (a.toolsId || '').localeCompare(b.toolsId || ''));
-      setKits(data);
-    }, (error) => {
-      console.error("Error fetching change kits:", error);
-    });
-    return () => unsubscribe();
-  }, [selectedFacility]);
 
   const handleUpdate = async (id: string, data: Partial<ChangeKit>) => {
     await updateDoc(doc(db, 'changeKits', id), data);

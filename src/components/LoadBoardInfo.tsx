@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { Plus, Trash2, Edit2, Check, X, Search, BarChart2, List, Filter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
+import { useData } from '../contexts/DataContext';
 
 interface LoadBoard {
   id: string;
@@ -92,8 +93,17 @@ const LoadBoardRow = React.memo(({
 });
 
 export default function LoadBoardInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
-  const [loadBoards, setLoadBoards] = useState<LoadBoard[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { loadBoards: allLoadBoards, loading } = useData();
+  
+  const loadBoards = useMemo(() => {
+    let data = [...allLoadBoards];
+    if (selectedFacility !== 'ALL') {
+      data = data.filter(lb => (lb.facility || '').trim().toUpperCase() === selectedFacility);
+    }
+    data.sort((a, b) => (a.projectName || '').localeCompare(b.projectName || ''));
+    return data;
+  }, [allLoadBoards, selectedFacility]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'stats'>('list');
@@ -109,23 +119,6 @@ export default function LoadBoardInfo({ isAdmin, selectedFacility }: { isAdmin: 
   const [displayCount, setDisplayCount] = useState(100);
 
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
-
-  useEffect(() => {
-    const q = query(collection(db, 'loadBoards'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LoadBoard));
-      if (selectedFacility !== 'ALL') {
-        data = data.filter(lb => (lb.facility || '').trim().toUpperCase() === selectedFacility);
-      }
-      data.sort((a, b) => (a.projectName || '').localeCompare(b.projectName || ''));
-      setLoadBoards(data);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching load boards:", error);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [selectedFacility]);
 
   const handleAdd = async () => {
     if (!newLoadBoard.projectName) return;

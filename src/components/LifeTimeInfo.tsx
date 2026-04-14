@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { Plus, Trash2, Edit2, Search, Check, X, Filter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
+import { useData } from '../contexts/DataContext';
 
 interface LifeTime {
   id: string;
@@ -90,7 +91,17 @@ const LifeTimeRow = React.memo(({
 });
 
 export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
-  const [records, setRecords] = useState<LifeTime[]>([]);
+  const { lifeTimes: allRecords } = useData();
+  
+  const records = useMemo(() => {
+    let data = [...allRecords];
+    if (selectedFacility !== 'ALL') {
+      data = data.filter(r => (r.facility || '').trim().toUpperCase() === selectedFacility);
+    }
+    data.sort((a, b) => (a.socketGroup || '').localeCompare(b.socketGroup || ''));
+    return data;
+  }, [allRecords, selectedFacility]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
@@ -102,21 +113,6 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
     'facility', 'socketGroup', 'pogoPin1Pn', 'pogoPinQty', 'lifeTime', 'loadBoardGroup', 'remark'
   ]);
   const [displayCount, setDisplayCount] = useState(100);
-
-  useEffect(() => {
-    const q = query(collection(db, 'lifeTimes'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LifeTime));
-      if (selectedFacility !== 'ALL') {
-        data = data.filter(r => (r.facility || '').trim().toUpperCase() === selectedFacility);
-      }
-      data.sort((a, b) => (a.socketGroup || '').localeCompare(b.socketGroup || ''));
-      setRecords(data);
-    }, (error) => {
-      console.error("Error fetching life times:", error);
-    });
-    return () => unsubscribe();
-  }, [selectedFacility]);
 
   const handleUpdate = async (id: string, data: Partial<LifeTime>) => {
     await updateDoc(doc(db, 'lifeTimes', id), data);

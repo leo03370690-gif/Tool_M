@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { Plus, Trash2, Upload, FileSpreadsheet, Calculator, List, Eraser, Table, Search, Filter, ChevronDown, ArrowUpDown, Check, ExternalLink, ChevronRight, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { cn } from '../lib/utils';
@@ -9,6 +9,7 @@ import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useData } from '../contexts/DataContext';
 
 interface RowData {
   id: string;
@@ -20,11 +21,34 @@ interface RowData {
 }
 
 export default function RequiredPogoPin({ selectedFacility }: { selectedFacility: string }) {
-  const [activeTab, setActiveTab] = useState<'input' | 'summary' | 'detailed'>('input');
+  const { products: allProducts, lifeTimes: allLifeTimes, pogoPins: allPogoPinsData, requiredPogoPinRows: allRows } = useData();
+
+  const products = useMemo(() => {
+    let data = [...allProducts];
+    if (selectedFacility !== 'ALL') {
+      data = data.filter(p => (p.facility || '').trim().toUpperCase() === selectedFacility);
+    }
+    return data;
+  }, [allProducts, selectedFacility]);
+
+  const lifeTimes = useMemo(() => {
+    let data = [...allLifeTimes];
+    if (selectedFacility !== 'ALL') {
+      data = data.filter(r => (r.facility || '').trim().toUpperCase() === selectedFacility);
+    }
+    return data;
+  }, [allLifeTimes, selectedFacility]);
+
+  const pogoPinsData = useMemo(() => {
+    let data = [...allPogoPinsData];
+    if (selectedFacility !== 'ALL') {
+      data = data.filter(p => (p.facility || '').trim().toUpperCase() === selectedFacility);
+    }
+    return data;
+  }, [allPogoPinsData, selectedFacility]);
+
   const [rows, setRows] = useState<RowData[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [lifeTimes, setLifeTimes] = useState<any[]>([]);
-  const [pogoPinsData, setPogoPinsData] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'input' | 'summary' | 'detailed'>('input');
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [detailedSearchTerm, setDetailedSearchTerm] = useState('');
   const [summarySearchTerm, setSummarySearchTerm] = useState('');
@@ -41,44 +65,12 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const unsubRows = onSnapshot(collection(db, 'requiredPogoPinRows'), (snapshot) => {
-      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RowData));
-      if (selectedFacility !== 'ALL') {
-        data = data.filter(r => (r.facility || '').trim().toUpperCase() === selectedFacility);
-      }
-      setRows(data);
-    });
-
-    const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
-      let data = snapshot.docs.map(doc => doc.data());
-      if (selectedFacility !== 'ALL') {
-        data = data.filter(p => (p.facility || '').trim().toUpperCase() === selectedFacility);
-      }
-      setProducts(data);
-    });
-    
-    const unsubLifeTimes = onSnapshot(collection(db, 'lifeTimes'), (snapshot) => {
-      let data = snapshot.docs.map(doc => doc.data());
-      if (selectedFacility !== 'ALL') {
-        data = data.filter(r => (r.facility || '').trim().toUpperCase() === selectedFacility);
-      }
-      setLifeTimes(data);
-    });
-
-    const unsubPogoPins = onSnapshot(collection(db, 'pogoPins'), (snapshot) => {
-      let data = snapshot.docs.map(doc => doc.data());
-      if (selectedFacility !== 'ALL') {
-        data = data.filter(p => (p.facility || '').trim().toUpperCase() === selectedFacility);
-      }
-      setPogoPinsData(data);
-    });
-
-    return () => {
-      unsubProducts();
-      unsubLifeTimes();
-      unsubPogoPins();
-    };
-  }, [selectedFacility]);
+    let data = [...allRows];
+    if (selectedFacility !== 'ALL') {
+      data = data.filter(r => (r.facility || '').trim().toUpperCase() === selectedFacility);
+    }
+    setRows(data);
+  }, [allRows, selectedFacility]);
 
   useEffect(() => {
     setRows(prevRows => prevRows.map(row => calculateRow(row, products, lifeTimes)));

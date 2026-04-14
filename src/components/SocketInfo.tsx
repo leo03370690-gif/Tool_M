@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { Plus, Trash2, Edit2, Check, X, Search, MoreHorizontal, BarChart2, List, Filter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
+import { useData } from '../contexts/DataContext';
 
 interface Socket {
   id: string;
@@ -116,8 +117,17 @@ const SocketRow = React.memo(({
 });
 
 export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
-  const [sockets, setSockets] = useState<Socket[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { sockets: allSockets, loading } = useData();
+  
+  const sockets = useMemo(() => {
+    let data = [...allSockets];
+    if (selectedFacility !== 'ALL') {
+      data = data.filter(s => (s.facility || '').trim().toUpperCase() === selectedFacility);
+    }
+    data.sort((a, b) => (a.toolsId || '').localeCompare(b.toolsId || ''));
+    return data;
+  }, [allSockets, selectedFacility]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'stats'>('list');
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
@@ -132,23 +142,6 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
     'facility', 'location', 'toolsId', 'package', 'pinBall', 'packageSize', 'project', 'status', 'contactCountPin1', 'lifeCountPin1', 'contactLimitPin1', 'socketGroupPin1', 'pogoPinPnPin1', 'socketPnPin1', 'contactCountOver70Pin1', 'contactCountPin2', 'lifeCountPin2', 'contactLimitPin2', 'pogoPinPnPin2', 'contactCountOver70Pin2', 'contactCountPcb', 'lifeCountPcb', 'contactLimitPcb', 'pnPcb', 'contactCountOver70Pcb', 'usedFlag'
   ]);
   const [displayCount, setDisplayCount] = useState(100);
-
-  useEffect(() => {
-    const q = query(collection(db, 'sockets'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Socket));
-      if (selectedFacility !== 'ALL') {
-        data = data.filter(s => (s.facility || '').trim().toUpperCase() === selectedFacility);
-      }
-      data.sort((a, b) => (a.toolsId || '').localeCompare(b.toolsId || ''));
-      setSockets(data);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching sockets:", error);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [selectedFacility]);
 
   const handleUpdate = async (id: string, data: Partial<Socket>) => {
     await updateDoc(doc(db, 'sockets', id), data);

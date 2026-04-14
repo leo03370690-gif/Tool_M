@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { Plus, Trash2, Edit2, Check, X, Search, MoreHorizontal, Filter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
+import { useData } from '../contexts/DataContext';
 
 interface Product {
   id: string;
@@ -106,8 +107,17 @@ const ProductRow = React.memo(({
 });
 
 export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { products: allProducts, loading } = useData();
+  
+  const products = useMemo(() => {
+    let data = [...allProducts];
+    if (selectedFacility !== 'ALL') {
+      data = data.filter(p => (p.facility || '').trim().toUpperCase() === selectedFacility);
+    }
+    data.sort((a, b) => (a.device || '').localeCompare(b.device || ''));
+    return data;
+  }, [allProducts, selectedFacility]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
@@ -124,23 +134,6 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   ]);
 
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
-
-  useEffect(() => {
-    const q = query(collection(db, 'products'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-      if (selectedFacility !== 'ALL') {
-        data = data.filter(p => (p.facility || '').trim().toUpperCase() === selectedFacility);
-      }
-      data.sort((a, b) => (a.device || '').localeCompare(b.device || ''));
-      setProducts(data);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching products:", error);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [selectedFacility]);
 
   const handleAdd = async () => {
     if (!newProduct.device) return;
@@ -468,36 +461,7 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
 }
 
 function DeviceDetailsModal({ device, products, onClose }: { device: string, products: Product[], onClose: () => void }) {
-  const [socketsData, setSocketsData] = useState<any[]>([]);
-  const [kitsData, setKitsData] = useState<any[]>([]);
-  const [loadBoardsData, setLoadBoardsData] = useState<any[]>([]);
-  const [lifeTimesData, setLifeTimesData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubSockets = onSnapshot(collection(db, 'sockets'), (snapshot) => {
-      setSocketsData(snapshot.docs.map(doc => doc.data()));
-    });
-    const unsubKits = onSnapshot(collection(db, 'changeKits'), (snapshot) => {
-      setKitsData(snapshot.docs.map(doc => doc.data()));
-    });
-    const unsubLoadBoards = onSnapshot(collection(db, 'loadBoards'), (snapshot) => {
-      setLoadBoardsData(snapshot.docs.map(doc => doc.data()));
-    });
-    const unsubLifeTimes = onSnapshot(collection(db, 'lifeTimes'), (snapshot) => {
-      setLifeTimesData(snapshot.docs.map(doc => doc.data()));
-    });
-
-    const timer = setTimeout(() => setLoading(false), 500);
-
-    return () => {
-      unsubSockets();
-      unsubKits();
-      unsubLoadBoards();
-      unsubLifeTimes();
-      clearTimeout(timer);
-    };
-  }, []);
+  const { sockets: socketsData, changeKits: kitsData, loadBoards: loadBoardsData, lifeTimes: lifeTimesData, loading } = useData();
 
   const insertions = Array.from(new Set(products.map(p => p.insertion).filter(Boolean)));
 
@@ -568,11 +532,11 @@ function DeviceDetailsModal({ device, products, onClose }: { device: string, pro
                               });
                               return (
                                 <div key={`s1-${name}`} className="flex flex-col gap-2 border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-zinc-700 truncate pr-2" title={name}>
-                                      {name} <span className="text-xs text-zinc-400 font-normal">(Name1)</span>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <span className="text-sm font-medium text-zinc-700 break-words" title={name}>
+                                      {name} <span className="text-xs text-zinc-400 font-normal whitespace-nowrap">(Name1)</span>
                                     </span>
-                                    <span className="text-lg font-light text-brand-primary">{count}</span>
+                                    <span className="text-lg font-light text-brand-primary shrink-0 mt-0.5">{count}</span>
                                   </div>
                                   {relatedLifeTimes.length > 0 && (
                                     <div className="space-y-2 mt-1">
@@ -610,11 +574,11 @@ function DeviceDetailsModal({ device, products, onClose }: { device: string, pro
                               });
                               return (
                                 <div key={`s2-${name}`} className="flex flex-col gap-2 border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-zinc-700 truncate pr-2" title={name}>
-                                      {name} <span className="text-xs text-zinc-400 font-normal">(Name2)</span>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <span className="text-sm font-medium text-zinc-700 break-words" title={name}>
+                                      {name} <span className="text-xs text-zinc-400 font-normal whitespace-nowrap">(Name2)</span>
                                     </span>
-                                    <span className="text-lg font-light text-brand-primary">{count}</span>
+                                    <span className="text-lg font-light text-brand-primary shrink-0 mt-0.5">{count}</span>
                                   </div>
                                   {relatedLifeTimes.length > 0 && (
                                     <div className="space-y-2 mt-1">
@@ -655,11 +619,11 @@ function DeviceDetailsModal({ device, products, onClose }: { device: string, pro
                                 return fac === loc && loc && kGroups.includes(name);
                               }).length;
                               return (
-                                <div key={`kit-${name}`} className="flex items-center justify-between border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
-                                  <span className="text-sm font-medium text-zinc-700 truncate pr-2" title={name}>
+                                <div key={`kit-${name}`} className="flex items-start justify-between gap-2 border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
+                                  <span className="text-sm font-medium text-zinc-700 break-words" title={name}>
                                     {name}
                                   </span>
-                                  <span className="text-lg font-light text-brand-primary">{count}</span>
+                                  <span className="text-lg font-light text-brand-primary shrink-0 mt-0.5">{count}</span>
                                 </div>
                               );
                             })}
@@ -679,11 +643,11 @@ function DeviceDetailsModal({ device, products, onClose }: { device: string, pro
                                 return fac === loc && loc && lGroups.includes(name);
                               }).length;
                               return (
-                                <div key={`lb-${name}`} className="flex items-center justify-between border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
-                                  <span className="text-sm font-medium text-zinc-700 truncate pr-2" title={name}>
+                                <div key={`lb-${name}`} className="flex items-start justify-between gap-2 border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
+                                  <span className="text-sm font-medium text-zinc-700 break-words" title={name}>
                                     {name}
                                   </span>
-                                  <span className="text-lg font-light text-brand-primary">{count}</span>
+                                  <span className="text-lg font-light text-brand-primary shrink-0 mt-0.5">{count}</span>
                                 </div>
                               );
                             })}

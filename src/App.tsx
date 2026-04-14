@@ -9,6 +9,8 @@ import FacilitySelection from './components/FacilitySelection';
 import { Loader2, AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+import { DataProvider } from './contexts/DataContext';
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -130,12 +132,14 @@ export default function App() {
             element={
               user ? (
                 selectedFacility ? (
-                  <Dashboard 
-                    user={user} 
-                    role={role} 
-                    selectedFacility={selectedFacility} 
-                    onBackToFacility={() => setSelectedFacility(null)} 
-                  />
+                  <DataProvider>
+                    <Dashboard 
+                      user={user} 
+                      role={role} 
+                      selectedFacility={selectedFacility} 
+                      onBackToFacility={() => setSelectedFacility(null)} 
+                    />
+                  </DataProvider>
                 ) : (
                   <FacilitySelection onSelect={setSelectedFacility} />
                 )

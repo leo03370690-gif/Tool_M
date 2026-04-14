@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { Plus, Trash2, Edit2, Search, Check, X, List, LayoutGrid, Filter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePersistentState } from '../lib/usePersistentState';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
+import { useData } from '../contexts/DataContext';
 
 interface PogoPin {
   id: string;
@@ -16,7 +17,17 @@ interface PogoPin {
 }
 
 export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
-  const [pins, setPins] = useState<PogoPin[]>([]);
+  const { pogoPins: allPins } = useData();
+  
+  const pins = useMemo(() => {
+    let data = [...allPins];
+    if (selectedFacility !== 'ALL') {
+      data = data.filter(p => (p.facility || '').trim().toUpperCase() === selectedFacility);
+    }
+    data.sort((a, b) => (a.pinPn || '').localeCompare(b.pinPn || ''));
+    return data;
+  }, [allPins, selectedFacility]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = usePersistentState<'card' | 'table'>('pogoPinInfo_viewMode', 'card');
@@ -24,21 +35,6 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('pogoPinInfo_visibleColumns', ['facility', 'pinPn', 'qty']);
   const [displayCount, setDisplayCount] = useState(100);
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
-
-  useEffect(() => {
-    const q = query(collection(db, 'pogoPins'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PogoPin));
-      if (selectedFacility !== 'ALL') {
-        data = data.filter(p => (p.facility || '').trim().toUpperCase() === selectedFacility);
-      }
-      data.sort((a, b) => (a.pinPn || '').localeCompare(b.pinPn || ''));
-      setPins(data);
-    }, (error) => {
-      console.error("Error fetching pogo pins:", error);
-    });
-    return () => unsubscribe();
-  }, [selectedFacility]);
 
   const handleUpdate = async (id: string, data: Partial<PogoPin>) => {
     await updateDoc(doc(db, 'pogoPins', id), data);
