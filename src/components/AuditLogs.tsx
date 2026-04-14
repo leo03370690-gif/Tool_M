@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
 import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { Clock, User, Activity, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
+import { useDebounce } from '../lib/useDebounce';
 
 interface AuditLog {
   id: string;
@@ -17,6 +18,7 @@ export default function AuditLogs() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   useEffect(() => {
     const q = query(collection(db, 'auditLogs'), orderBy('timestamp', 'desc'), limit(100));
@@ -31,11 +33,13 @@ export default function AuditLogs() {
     return () => unsubscribe();
   }, []);
 
-  const filteredLogs = logs.filter(log => 
-    log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.details.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredLogs = useMemo(() => {
+    return logs.filter(log => 
+      log.action.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      log.userEmail.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      log.details.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [logs, debouncedSearchTerm]);
 
   if (loading) {
     return (

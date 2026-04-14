@@ -8,6 +8,7 @@ import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
+import { useDebounce } from '../lib/useDebounce';
 
 interface LoadBoard {
   id: string;
@@ -106,6 +107,7 @@ export default function LoadBoardInfo({ isAdmin, selectedFacility }: { isAdmin: 
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [viewMode, setViewMode] = useState<'list' | 'stats'>('list');
   const [newLoadBoard, setNewLoadBoard] = useState<Partial<LoadBoard>>({});
 
@@ -186,9 +188,9 @@ export default function LoadBoardInfo({ isAdmin, selectedFacility }: { isAdmin: 
 
   const filteredLoadBoards = React.useMemo(() => {
     return loadBoards.filter(lb => {
-      const matchSearch = (lb.projectName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (lb.lbName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (lb.lbGroup || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchSearch = (lb.projectName || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (lb.lbName || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (lb.lbGroup || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       
       const matchProjectName = filterProjectNames.length === 0 || filterProjectNames.includes(String(lb.projectName || ''));
       const matchLBName = filterLBNames.length === 0 || filterLBNames.includes(String(lb.lbName || ''));
@@ -197,7 +199,7 @@ export default function LoadBoardInfo({ isAdmin, selectedFacility }: { isAdmin: 
 
       return matchSearch && matchProjectName && matchLBName && matchLBGroup && matchLocation;
     });
-  }, [loadBoards, searchTerm, filterProjectNames, filterLBNames, filterLBGroups, filterLocations]);
+  }, [loadBoards, debouncedSearchTerm, filterProjectNames, filterLBNames, filterLBGroups, filterLocations]);
 
   const allColumns = [
     { key: 'facility', label: 'Facility' },

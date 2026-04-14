@@ -8,6 +8,7 @@ import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
+import { useDebounce } from '../lib/useDebounce';
 
 interface Product {
   id: string;
@@ -120,6 +121,7 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
 
@@ -201,9 +203,9 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
 
   const filteredProducts = React.useMemo(() => {
     return products.filter(p => {
-      const matchSearch = (p.device || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.projectName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.nickname || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchSearch = (p.device || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (p.projectName || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (p.nickname || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       
       const matchDevice = filterDevices.length === 0 || filterDevices.includes(String(p.device || ''));
       const matchProjectName = filterProjectNames.length === 0 || filterProjectNames.includes(String(p.projectName || ''));
@@ -213,7 +215,7 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
 
       return matchSearch && matchDevice && matchProjectName && matchNickname && matchChangeKitGroup && matchLBGroup;
     });
-  }, [products, searchTerm, filterDevices, filterProjectNames, filterNicknames, filterChangeKitGroups, filterLBGroups]);
+  }, [products, debouncedSearchTerm, filterDevices, filterProjectNames, filterNicknames, filterChangeKitGroups, filterLBGroups]);
 
   const allColumns = [
     { key: 'facility', label: 'Facility' },

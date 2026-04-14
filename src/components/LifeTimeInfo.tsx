@@ -8,6 +8,7 @@ import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
+import { useDebounce } from '../lib/useDebounce';
 
 interface LifeTime {
   id: string;
@@ -104,6 +105,7 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
 
   const [filterSocketGroups, setFilterSocketGroups] = usePersistentState<string[]>('lifeTimeInfo_filterSocketGroups', []);
@@ -152,8 +154,8 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
 
   const filteredRecords = React.useMemo(() => {
     return records.filter(r => {
-      const matchSearch = (r.socketGroup || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (r.pogoPin1Pn || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchSearch = (r.socketGroup || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (r.pogoPin1Pn || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       
       const matchSocketGroup = filterSocketGroups.length === 0 || filterSocketGroups.includes(String(r.socketGroup || ''));
       const matchPogoPin1Pn = filterPogoPin1Pns.length === 0 || filterPogoPin1Pns.includes(String(r.pogoPin1Pn || ''));
@@ -161,7 +163,7 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
 
       return matchSearch && matchSocketGroup && matchPogoPin1Pn && matchLoadBoardGroup;
     });
-  }, [records, searchTerm, filterSocketGroups, filterPogoPin1Pns, filterLoadBoardGroups]);
+  }, [records, debouncedSearchTerm, filterSocketGroups, filterPogoPin1Pns, filterLoadBoardGroups]);
 
   const allColumns = [
     { key: 'facility', label: 'Facility' },

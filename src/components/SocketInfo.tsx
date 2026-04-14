@@ -8,6 +8,7 @@ import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
+import { useDebounce } from '../lib/useDebounce';
 
 interface Socket {
   id: string;
@@ -132,6 +133,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
   const [viewMode, setViewMode] = useState<'list' | 'stats'>('list');
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const [filterSocketGroups, setFilterSocketGroups] = usePersistentState<string[]>('socketInfo_filterSocketGroups', []);
   const [filterToolsIds, setFilterToolsIds] = usePersistentState<string[]>('socketInfo_filterToolsIds', []);
@@ -204,8 +206,8 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
 
   const filteredSockets = React.useMemo(() => {
     return sockets.filter(s => {
-      const matchSearch = (s.toolsId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (s.project || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchSearch = (s.toolsId || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (s.project || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       
       const matchSocketGroup = filterSocketGroups.length === 0 || filterSocketGroups.includes(String(s.socketGroupPin1 || ''));
       const matchToolsId = filterToolsIds.length === 0 || filterToolsIds.includes(String(s.toolsId || ''));
@@ -215,7 +217,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
 
       return matchSearch && matchSocketGroup && matchToolsId && matchProject && matchStatus && matchPogoPinPn;
     });
-  }, [sockets, searchTerm, filterSocketGroups, filterToolsIds, filterProjects, filterStatuses, filterPogoPinPns]);
+  }, [sockets, debouncedSearchTerm, filterSocketGroups, filterToolsIds, filterProjects, filterStatuses, filterPogoPinPns]);
 
   const allColumns = [
     { key: 'facility', label: 'Facility' },

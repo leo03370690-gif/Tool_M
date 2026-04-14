@@ -8,6 +8,7 @@ import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
+import { useDebounce } from '../lib/useDebounce';
 
 interface ChangeKit {
   id: string;
@@ -104,6 +105,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [viewMode, setViewMode] = useState<'list' | 'stats'>('list');
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
 
@@ -172,8 +174,8 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
 
   const filteredKits = React.useMemo(() => {
     return kits.filter(k => {
-      const matchSearch = (k.toolsId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (k.kind || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchSearch = (k.toolsId || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (k.kind || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       
       const matchToolsId = filterToolsIds.length === 0 || filterToolsIds.includes(String(k.toolsId || ''));
       const matchChangeKitGroup = filterChangeKitGroups.length === 0 || filterChangeKitGroups.includes(String(k.changeKitGroup || ''));
@@ -181,7 +183,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
 
       return matchSearch && matchToolsId && matchChangeKitGroup && matchStatus;
     });
-  }, [kits, searchTerm, filterToolsIds, filterChangeKitGroups, filterStatuses]);
+  }, [kits, debouncedSearchTerm, filterToolsIds, filterChangeKitGroups, filterStatuses]);
 
   const allColumns = [
     { key: 'facility', label: 'Facility' },

@@ -10,6 +10,7 @@ import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useData } from '../contexts/DataContext';
+import { useDebounce } from '../lib/useDebounce';
 
 interface RowData {
   id: string;
@@ -51,7 +52,9 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
   const [activeTab, setActiveTab] = useState<'input' | 'summary' | 'detailed'>('input');
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [detailedSearchTerm, setDetailedSearchTerm] = useState('');
+  const debouncedDetailedSearchTerm = useDebounce(detailedSearchTerm, 300);
   const [summarySearchTerm, setSummarySearchTerm] = useState('');
+  const debouncedSummarySearchTerm = useDebounce(summarySearchTerm, 300);
   const [filterPogoPins, setFilterPogoPins] = usePersistentState<string[]>('reqPogoPin_filterPogoPins', []);
   const [filterNicknames, setFilterNicknames] = usePersistentState<string[]>('reqPogoPin_filterNicknames', []);
   const [filterDevices, setFilterDevices] = usePersistentState<string[]>('reqPogoPin_filterDevices', []);
@@ -246,10 +249,10 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
   const summaryData = React.useMemo(() => getSummary(), [rows, pogoPinsData]);
 
   const filteredSummaryData = React.useMemo(() => {
-    if (!summarySearchTerm.trim()) return summaryData;
-    const term = summarySearchTerm.toLowerCase();
+    if (!debouncedSummarySearchTerm.trim()) return summaryData;
+    const term = debouncedSummarySearchTerm.toLowerCase();
     return summaryData.filter(([name]) => name.toLowerCase().includes(term));
-  }, [summaryData, summarySearchTerm]);
+  }, [summaryData, debouncedSummarySearchTerm]);
 
   const topShortages = React.useMemo(() => {
     return summaryData
@@ -427,8 +430,8 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
   const filteredDetailedSummaryData = React.useMemo(() => {
     let result = detailedSummaryData;
 
-    if (detailedSearchTerm.trim()) {
-      const term = detailedSearchTerm.toLowerCase();
+    if (debouncedDetailedSearchTerm.trim()) {
+      const term = debouncedDetailedSearchTerm.toLowerCase();
       result = result.filter(group => String(group.pinName || '').toLowerCase().includes(term));
     }
 

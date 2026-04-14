@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { User as FirebaseUser, signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { cn } from '../lib/utils';
@@ -21,19 +21,21 @@ import {
   Search as SearchIcon,
   Calculator,
   Menu,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
-import ProductInfo from './ProductInfo';
-import SocketInfo from './SocketInfo';
-import ChangeKitInfo from './ChangeKitInfo';
-import PogoPinInfo from './PogoPinInfo';
-import LifeTimeInfo from './LifeTimeInfo';
-import LoadBoardInfo from './LoadBoardInfo';
-import UserManagement from './UserManagement';
-import SettingsTab from './Settings';
-import DataManagement from './DataManagement';
-import AuditLogs from './AuditLogs';
-import RequiredPogoPin from './RequiredPogoPin';
+
+const ProductInfo = lazy(() => import('./ProductInfo'));
+const SocketInfo = lazy(() => import('./SocketInfo'));
+const ChangeKitInfo = lazy(() => import('./ChangeKitInfo'));
+const PogoPinInfo = lazy(() => import('./PogoPinInfo'));
+const LifeTimeInfo = lazy(() => import('./LifeTimeInfo'));
+const LoadBoardInfo = lazy(() => import('./LoadBoardInfo'));
+const UserManagement = lazy(() => import('./UserManagement'));
+const SettingsTab = lazy(() => import('./Settings'));
+const DataManagement = lazy(() => import('./DataManagement'));
+const AuditLogs = lazy(() => import('./AuditLogs'));
+const RequiredPogoPin = lazy(() => import('./RequiredPogoPin'));
 
 interface DashboardProps {
   user: FirebaseUser;
@@ -235,17 +237,23 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
               transition={{ duration: 0.2 }}
               className="rounded-2xl md:rounded-3xl bg-white p-4 md:p-10 card-shadow ring-1 ring-black/5 min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-10rem)]"
             >
-              {activeTab === 'product' && <ProductInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
-              {activeTab === 'socket' && <SocketInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
-              {activeTab === 'change-kit' && <ChangeKitInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
-              {activeTab === 'pogo-pin' && <PogoPinInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
-              {activeTab === 'life-time' && <LifeTimeInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
-              {activeTab === 'load-board' && <LoadBoardInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
-              {activeTab === 'required-pogo-pin' && <RequiredPogoPin selectedFacility={selectedFacility} />}
-              {activeTab === 'data-management' && <DataManagement />}
-              {activeTab === 'settings' && <SettingsTab />}
-              {activeTab === 'users' && <UserManagement />}
-              {activeTab === 'audit-logs' && <AuditLogs />}
+              <Suspense fallback={
+                <div className="flex h-full items-center justify-center min-h-[400px]">
+                  <Loader2 className="h-8 w-8 animate-spin text-zinc-300" />
+                </div>
+              }>
+                {activeTab === 'product' && <ProductInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+                {activeTab === 'socket' && <SocketInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+                {activeTab === 'change-kit' && <ChangeKitInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+                {activeTab === 'pogo-pin' && <PogoPinInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+                {activeTab === 'life-time' && <LifeTimeInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+                {activeTab === 'load-board' && <LoadBoardInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+                {activeTab === 'required-pogo-pin' && <RequiredPogoPin selectedFacility={selectedFacility} />}
+                {activeTab === 'data-management' && <DataManagement />}
+                {activeTab === 'settings' && <SettingsTab />}
+                {activeTab === 'users' && <UserManagement />}
+                {activeTab === 'audit-logs' && <AuditLogs />}
+              </Suspense>
             </motion.div>
           </AnimatePresence>
         </div>

@@ -8,6 +8,7 @@ import { usePersistentState } from '../lib/usePersistentState';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { useData } from '../contexts/DataContext';
+import { useDebounce } from '../lib/useDebounce';
 
 interface PogoPin {
   id: string;
@@ -30,6 +31,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [viewMode, setViewMode] = usePersistentState<'card' | 'table'>('pogoPinInfo_viewMode', 'card');
   const [filterPinPns, setFilterPinPns] = usePersistentState<string[]>('pogoPinInfo_filterPinPns', []);
   const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('pogoPinInfo_visibleColumns', ['facility', 'pinPn', 'qty']);
@@ -56,11 +58,11 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
 
   const filteredPins = React.useMemo(() => {
     return pins.filter(p => {
-      const matchSearch = (p.pinPn || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchSearch = (p.pinPn || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchPinPn = filterPinPns.length === 0 || filterPinPns.includes(String(p.pinPn || ''));
       return matchSearch && matchPinPn;
     });
-  }, [pins, searchTerm, filterPinPns]);
+  }, [pins, debouncedSearchTerm, filterPinPns]);
 
   const columns = [
     { key: 'facility', label: 'Facility' },
