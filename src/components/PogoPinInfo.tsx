@@ -141,7 +141,11 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
           {isAdmin && (
             <button 
               onClick={async () => {
-                const docRef = await addDoc(collection(db, 'pogoPins'), { pinPn: 'NEW_PIN', qty: 0, facility: '' });
+                const docRef = await addDoc(collection(db, 'pogoPins'), { 
+                  pinPn: 'NEW_PIN', 
+                  qty: 0, 
+                  facility: selectedFacility === 'ALL' ? '' : selectedFacility 
+                });
                 setEditingId(docRef.id);
               }}
               className="flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 transition-all shadow-lg shadow-black/10 active:scale-95"

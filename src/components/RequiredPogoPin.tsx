@@ -72,12 +72,8 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
     if (selectedFacility !== 'ALL') {
       data = data.filter(r => (r.facility || '').trim().toUpperCase() === selectedFacility);
     }
-    setRows(data);
-  }, [allRows, selectedFacility]);
-
-  useEffect(() => {
-    setRows(prevRows => prevRows.map(row => calculateRow(row, products, lifeTimes)));
-  }, [products, lifeTimes]);
+    setRows(data.map(row => calculateRow(row, products, lifeTimes)));
+  }, [allRows, selectedFacility, products, lifeTimes]);
 
   const calculateRow = (row: RowData, prods: any[], lts: any[]): RowData => {
     if (!row.partNo) return { ...row, remark: '', pogoPins: [] };
@@ -189,8 +185,12 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
         for (let i = 1; i < data.length; i++) {
           const row = data[i];
           if (row[0]) {
-            const partNo = String(row[0]);
-            const qty = Number(row[1]) || '';
+            const partNo = String(row[0]).trim();
+            let rawQty = row[1];
+            if (typeof rawQty === 'string') {
+              rawQty = rawQty.replace(/,/g, '').trim();
+            }
+            const qty = Number(rawQty) || '';
             const newRow: RowData = {
               id: '', // Not needed for addDoc
               partNo,
@@ -1315,9 +1315,20 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    setRows([]);
-                    setIsClearModalOpen(false);
+                  onClick={async () => {
+                    try {
+                      const batch = writeBatch(db);
+                      rows.forEach(row => {
+                        if (row.id) {
+                          const docRef = doc(db, 'requiredPogoPinRows', row.id);
+                          batch.delete(docRef);
+                        }
+                      });
+                      await batch.commit();
+                      setIsClearModalOpen(false);
+                    } catch (error) {
+                      console.error("Error clearing data: ", error);
+                    }
                   }}
                   className="px-4 py-2 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors"
                 >

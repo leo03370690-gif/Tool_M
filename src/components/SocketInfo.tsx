@@ -283,7 +283,10 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
           {isAdmin && (
             <button 
               onClick={async () => {
-                const docRef = await addDoc(collection(db, 'sockets'), { toolsId: 'NEW_SOCKET' });
+                const docRef = await addDoc(collection(db, 'sockets'), { 
+                  toolsId: 'NEW_SOCKET',
+                  facility: selectedFacility === 'ALL' ? '' : selectedFacility
+                });
                 setEditingId(docRef.id);
               }}
               className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
