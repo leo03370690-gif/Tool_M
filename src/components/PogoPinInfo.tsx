@@ -17,6 +17,207 @@ interface PogoPin {
   qty: number;
 }
 
+const PinCard = React.memo(({ 
+  pin, 
+  isAdmin, 
+  editingId, 
+  setEditingId, 
+  handleUpdate, 
+  setModal,
+  setSaveModal
+}: { 
+  pin: PogoPin, 
+  isAdmin: boolean, 
+  editingId: string | null, 
+  setEditingId: (id: string | null) => void, 
+  handleUpdate: (id: string, data: any) => void, 
+  setModal: (modal: any) => void,
+  setSaveModal: (modal: any) => void
+}) => {
+  const [localData, setLocalData] = useState<Partial<PogoPin>>(pin);
+  
+  useEffect(() => {
+    if (editingId !== pin.id) {
+      setLocalData(pin);
+    }
+  }, [pin, editingId]);
+
+  const isEditing = editingId === pin.id;
+
+  return (
+    <motion.div 
+      layout
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      className="group relative rounded-3xl bg-white p-6 shadow-sm border border-zinc-100 hover:shadow-xl hover:border-brand-primary/20 transition-all"
+    >
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-primary/5 text-brand-primary">
+          <Filter className="h-6 w-6" />
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-1">Quantity</p>
+          {isEditing ? (
+            <input
+              type="number"
+              value={localData.qty || 0}
+              onChange={(e) => setLocalData({ ...localData, qty: Number(e.target.value) })}
+              className="w-20 border-b border-brand-primary bg-transparent text-3xl font-bold focus:outline-none py-1 text-right"
+            />
+          ) : (
+            <p className={cn(
+              "text-3xl font-bold transition-colors",
+              pin.qty < 50 ? "text-rose-500" : "text-zinc-900"
+            )}>{pin.qty}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">Part Number</p>
+        {isEditing ? (
+          <input
+            type="text"
+            value={localData.pinPn || ''}
+            onChange={(e) => setLocalData({ ...localData, pinPn: e.target.value })}
+            className="w-full border-b border-brand-primary bg-transparent text-xl font-bold focus:outline-none py-1"
+          />
+        ) : (
+          <h3 className="text-xl font-bold text-brand-primary tracking-tight">{pin.pinPn}</h3>
+        )}
+      </div>
+      
+      {isAdmin && (
+        <div className="mt-8 flex gap-2 opacity-0 transition-all group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+          {isEditing ? (
+            <>
+              <button 
+                onClick={() => setSaveModal({ isOpen: true, id: pin.id, data: localData })} 
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-50 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-100 transition-all"
+              >
+                <Check className="h-3.5 w-3.5" />
+                SAVE
+              </button>
+              <button 
+                onClick={() => { setLocalData(pin); setEditingId(null); }} 
+                className="p-2.5 rounded-xl bg-zinc-50 text-zinc-400 hover:bg-zinc-100 transition-all"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => setEditingId(pin.id)} 
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-zinc-50 py-2.5 text-xs font-bold text-zinc-500 hover:bg-brand-primary hover:text-white transition-all"
+              >
+                <Edit2 className="h-3.5 w-3.5" />
+                EDIT
+              </button>
+              <button 
+                onClick={() => setModal({ isOpen: true, id: pin.id })} 
+                className="p-2.5 rounded-xl bg-zinc-50 text-zinc-400 hover:bg-rose-50 hover:text-rose-600 transition-all"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </motion.div>
+  );
+});
+
+const PinRow = React.memo(({ 
+  pin, 
+  idx, 
+  columns, 
+  visibleColumns,
+  isAdmin, 
+  editingId, 
+  setEditingId, 
+  handleUpdate, 
+  setModal,
+  setSaveModal
+}: { 
+  pin: PogoPin, 
+  idx: number, 
+  columns: any[], 
+  visibleColumns: string[],
+  isAdmin: boolean, 
+  editingId: string | null, 
+  setEditingId: (id: string | null) => void, 
+  handleUpdate: (id: string, data: any) => void, 
+  setModal: (modal: any) => void,
+  setSaveModal: (modal: any) => void
+}) => {
+  const [localData, setLocalData] = useState<Partial<PogoPin>>(pin);
+  
+  useEffect(() => {
+    if (editingId !== pin.id) {
+      setLocalData(pin);
+    }
+  }, [pin, editingId]);
+
+  const isEditing = editingId === pin.id;
+
+  return (
+    <motion.tr 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(idx * 0.01, 0.5) }}
+      className="group hover:bg-zinc-50/80 transition-colors"
+    >
+      {columns.filter(col => visibleColumns.includes(col.key)).map((col, i) => (
+        <td key={col.key} className={cn("px-6 py-4 text-zinc-600 whitespace-nowrap", i === 0 && visibleColumns[0] === col.key && "sticky left-0 bg-white group-hover:bg-zinc-50/80 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors")}>
+          {isEditing ? (
+            <input
+              type={col.key === 'qty' ? 'number' : 'text'}
+              value={localData[col.key as keyof PogoPin] as any || ''}
+              onChange={(e) => setLocalData({ ...localData, [col.key]: col.key === 'qty' ? Number(e.target.value) : e.target.value })}
+              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all"
+              autoFocus={col.key === 'facility'}
+            />
+          ) : (
+            <span className={cn(
+              "font-medium",
+              col.key === 'pinPn' ? "text-brand-primary font-bold" : "text-zinc-500"
+            )}>
+              {pin[col.key as keyof PogoPin]}
+            </span>
+          )}
+        </td>
+      ))}
+      {isAdmin && (
+        <td className="px-6 py-4 text-right">
+          {isEditing ? (
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setSaveModal({ isOpen: true, id: pin.id, data: localData })} className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"><Check className="h-4 w-4" /></button>
+              <button onClick={() => { setLocalData(pin); setEditingId(null); }} className="p-2 rounded-lg bg-zinc-100 text-zinc-400 hover:bg-zinc-200 transition-colors"><X className="h-4 w-4" /></button>
+            </div>
+          ) : (
+            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button 
+                onClick={() => setEditingId(pin.id)} 
+                className="p-2 rounded-lg hover:bg-white hover:shadow-sm text-zinc-400 hover:text-brand-primary transition-all"
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => setModal({ isOpen: true, id: pin.id })} 
+                className="p-2 rounded-lg hover:bg-rose-50 text-zinc-400 hover:text-rose-600 transition-all"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </td>
+      )}
+    </motion.tr>
+  );
+});
+
 export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
   const { pogoPins: allPins } = useData();
   
@@ -37,6 +238,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('pogoPinInfo_visibleColumns', ['facility', 'pinPn', 'qty']);
   const [displayCount, setDisplayCount] = useState(100);
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
+  const [saveModal, setSaveModal] = useState<{isOpen: boolean, id: string | null, data: any | null}>({ isOpen: false, id: null, data: null });
 
   const handleUpdate = async (id: string, data: Partial<PogoPin>) => {
     await updateDoc(doc(db, 'pogoPins', id), data);
@@ -168,82 +370,17 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
             className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
           >
             <AnimatePresence mode="popLayout">
-              {filteredPins.slice(0, displayCount).map((pin, idx) => (
-                <motion.div 
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ delay: idx * 0.05 }}
-                  key={pin.id} 
-                  className="group relative rounded-3xl border border-zinc-100 bg-white p-8 card-shadow transition-all hover:border-brand-primary/20"
-                >
-                  <div className="flex flex-col gap-6">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">Facility</p>
-                        {editingId === pin.id ? (
-                          <input
-                            type="text"
-                            defaultValue={pin.facility || ''}
-                            className="w-full border-b border-brand-primary bg-transparent text-sm font-bold focus:outline-none py-1"
-                            onBlur={(e) => handleUpdate(pin.id, { facility: e.target.value })}
-                          />
-                        ) : (
-                          <h3 className="text-sm font-bold text-zinc-500">{pin.facility || '-'}</h3>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">Quantity</p>
-                        {editingId === pin.id ? (
-                          <input
-                            type="number"
-                            defaultValue={pin.qty}
-                            className="w-20 border-b border-brand-primary bg-transparent text-3xl font-bold focus:outline-none py-1 text-right"
-                            onBlur={(e) => handleUpdate(pin.id, { qty: Number(e.target.value) })}
-                          />
-                        ) : (
-                          <p className={cn(
-                            "text-3xl font-bold transition-colors",
-                            pin.qty < 50 ? "text-rose-500" : "text-zinc-900"
-                          )}>{pin.qty}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">Part Number</p>
-                      {editingId === pin.id ? (
-                        <input
-                          type="text"
-                          defaultValue={pin.pinPn}
-                          className="w-full border-b border-brand-primary bg-transparent text-xl font-bold focus:outline-none py-1"
-                          onBlur={(e) => handleUpdate(pin.id, { pinPn: e.target.value })}
-                        />
-                      ) : (
-                        <h3 className="text-xl font-bold text-brand-primary tracking-tight">{pin.pinPn}</h3>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {isAdmin && (
-                    <div className="mt-8 flex gap-2 opacity-0 transition-all group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
-                      <button 
-                        onClick={() => setEditingId(pin.id)} 
-                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-zinc-50 py-2.5 text-xs font-bold text-zinc-500 hover:bg-brand-primary hover:text-white transition-all"
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                        EDIT
-                      </button>
-                      <button 
-                        onClick={() => setModal({ isOpen: true, id: pin.id })} 
-                        className="p-2.5 rounded-xl bg-zinc-50 text-zinc-400 hover:bg-rose-50 hover:text-rose-600 transition-all"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-                </motion.div>
+              {filteredPins.slice(0, displayCount).map((pin) => (
+                <PinCard
+                  key={pin.id}
+                  pin={pin}
+                  isAdmin={isAdmin}
+                  editingId={editingId}
+                  setEditingId={setEditingId}
+                  handleUpdate={handleUpdate}
+                  setModal={setModal}
+                  setSaveModal={setSaveModal}
+                />
               ))}
             </AnimatePresence>
             {filteredPins.length > displayCount && (
@@ -278,52 +415,19 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                 </thead>
                 <tbody className="divide-y divide-zinc-50">
                   {filteredPins.slice(0, displayCount).map((pin, idx) => (
-                    <motion.tr 
+                    <PinRow
                       key={pin.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(idx * 0.01, 0.5) }}
-                      className="group hover:bg-zinc-50/80 transition-colors"
-                    >
-                      {columns.filter(col => visibleColumns.includes(col.key)).map((col, i) => (
-                        <td key={col.key} className={cn("px-6 py-4 text-zinc-600 whitespace-nowrap", i === 0 && visibleColumns[0] === col.key && "sticky left-0 bg-white group-hover:bg-zinc-50/80 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors")}>
-                          {editingId === pin.id ? (
-                            <input
-                              type={col.key === 'qty' ? 'number' : 'text'}
-                              defaultValue={pin[col.key as keyof PogoPin] as any}
-                              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all"
-                              onBlur={(e) => handleUpdate(pin.id, { [col.key]: col.key === 'qty' ? Number(e.target.value) : e.target.value })}
-                              autoFocus={col.key === 'facility'}
-                            />
-                          ) : (
-                            <span className={cn(
-                              "font-medium",
-                              col.key === 'pinPn' ? "text-brand-primary font-bold" : "text-zinc-500"
-                            )}>
-                              {pin[col.key as keyof PogoPin]}
-                            </span>
-                          )}
-                        </td>
-                      ))}
-                      {isAdmin && (
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              onClick={() => setEditingId(pin.id)} 
-                              className="p-2 rounded-lg hover:bg-white hover:shadow-sm text-zinc-400 hover:text-brand-primary transition-all"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button 
-                              onClick={() => setModal({ isOpen: true, id: pin.id })} 
-                              className="p-2 rounded-lg hover:bg-rose-50 text-zinc-400 hover:text-rose-600 transition-all"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </motion.tr>
+                      pin={pin}
+                      idx={idx}
+                      columns={columns}
+                      visibleColumns={visibleColumns}
+                      isAdmin={isAdmin}
+                      editingId={editingId}
+                      setEditingId={setEditingId}
+                      handleUpdate={handleUpdate}
+                      setModal={setModal}
+                      setSaveModal={setSaveModal}
+                    />
                   ))}
                   {filteredPins.length > displayCount && (
                     <tr>
@@ -370,6 +474,49 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                   className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-red-700 shadow-lg shadow-red-600/20"
                 >
                   Delete Record
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Save Confirmation Modal */}
+      <AnimatePresence>
+        {saveModal.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl"
+            >
+              <div className="mb-6 flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                  <Check className="h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-bold text-zinc-900">Save Changes</h3>
+              </div>
+              <p className="mb-8 text-sm leading-relaxed text-zinc-600">
+                Are you sure you want to save these changes to the database?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setSaveModal({ isOpen: false, id: null, data: null })}
+                  className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (saveModal.id && saveModal.data) {
+                      handleUpdate(saveModal.id, saveModal.data);
+                      setSaveModal({ isOpen: false, id: null, data: null });
+                    }
+                  }}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-emerald-700 shadow-lg shadow-emerald-600/20"
+                >
+                  Save Changes
                 </button>
               </div>
             </motion.div>

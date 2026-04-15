@@ -29,7 +29,8 @@ const LifeTimeRow = React.memo(({
   editingId, 
   setEditingId, 
   handleUpdate, 
-  setModal 
+  setModal,
+  setSaveModal
 }: { 
   record: LifeTime, 
   idx: number, 
@@ -38,8 +39,19 @@ const LifeTimeRow = React.memo(({
   editingId: string | null, 
   setEditingId: (id: string | null) => void, 
   handleUpdate: (id: string, data: any) => void, 
-  setModal: (modal: any) => void 
+  setModal: (modal: any) => void,
+  setSaveModal: (modal: any) => void
 }) => {
+  const [localData, setLocalData] = useState<Partial<LifeTime>>(record);
+  
+  useEffect(() => {
+    if (editingId !== record.id) {
+      setLocalData(record);
+    }
+  }, [record, editingId]);
+
+  const isEditing = editingId === record.id;
+
   return (
     <motion.tr 
       initial={{ opacity: 0, y: 10 }}
@@ -51,12 +63,12 @@ const LifeTimeRow = React.memo(({
     >
       {columns.map((col, i) => (
         <td key={col.key} className={cn("px-6 py-4 text-zinc-600 whitespace-nowrap", i === 0 && "sticky left-0 bg-white group-hover:bg-zinc-50/80 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors")}>
-          {editingId === record.id ? (
+          {isEditing ? (
             <input
               type={col.key === 'pogoPinQty' || col.key === 'lifeTime' ? 'number' : 'text'}
-              defaultValue={record[col.key as keyof LifeTime] as any}
+              value={localData[col.key as keyof LifeTime] as any || ''}
+              onChange={(e) => setLocalData({ ...localData, [col.key]: col.key === 'pogoPinQty' || col.key === 'lifeTime' ? Number(e.target.value) : e.target.value })}
               className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all"
-              onBlur={(e) => handleUpdate(record.id, { [col.key]: col.key === 'pogoPinQty' || col.key === 'lifeTime' ? Number(e.target.value) : e.target.value })}
               autoFocus={col.key === 'facility'}
             />
           ) : (
@@ -71,20 +83,27 @@ const LifeTimeRow = React.memo(({
       ))}
       {isAdmin && (
         <td className="px-6 py-4 text-right">
-          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button 
-              onClick={() => setEditingId(record.id)} 
-              className="p-2 rounded-lg hover:bg-white hover:shadow-sm text-zinc-400 hover:text-brand-primary transition-all"
-            >
-              <Edit2 className="h-4 w-4" />
-            </button>
-            <button 
-              onClick={() => setModal({ isOpen: true, id: record.id })} 
-              className="p-2 rounded-lg hover:bg-rose-50 text-zinc-400 hover:text-rose-600 transition-all"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
+          {isEditing ? (
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setSaveModal({ isOpen: true, id: record.id, data: localData })} className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"><Check className="h-4 w-4" /></button>
+              <button onClick={() => { setLocalData(record); setEditingId(null); }} className="p-2 rounded-lg bg-zinc-100 text-zinc-400 hover:bg-zinc-200 transition-colors"><X className="h-4 w-4" /></button>
+            </div>
+          ) : (
+            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button 
+                onClick={() => setEditingId(record.id)} 
+                className="p-2 rounded-lg hover:bg-white hover:shadow-sm text-zinc-400 hover:text-brand-primary transition-all"
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => setModal({ isOpen: true, id: record.id })} 
+                className="p-2 rounded-lg hover:bg-rose-50 text-zinc-400 hover:text-rose-600 transition-all"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </td>
       )}
     </motion.tr>
@@ -107,6 +126,7 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
+  const [saveModal, setSaveModal] = useState<{isOpen: boolean, id: string | null, data: any | null}>({ isOpen: false, id: null, data: null });
 
   const [filterSocketGroups, setFilterSocketGroups] = usePersistentState<string[]>('lifeTimeInfo_filterSocketGroups', []);
   const [filterPogoPin1Pns, setFilterPogoPin1Pns] = usePersistentState<string[]>('lifeTimeInfo_filterPogoPin1Pns', []);
@@ -295,6 +315,7 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
                     setEditingId={setEditingId}
                     handleUpdate={handleUpdate}
                     setModal={setModal}
+                    setSaveModal={setSaveModal}
                   />
                 ))}
               </AnimatePresence>
@@ -348,6 +369,49 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
                   className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-red-700 shadow-lg shadow-red-600/20"
                 >
                   Delete Record
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Save Confirmation Modal */}
+      <AnimatePresence>
+        {saveModal.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl"
+            >
+              <div className="mb-6 flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                  <Check className="h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-bold text-zinc-900">Save Changes</h3>
+              </div>
+              <p className="mb-8 text-sm leading-relaxed text-zinc-600">
+                Are you sure you want to save these changes to the database?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setSaveModal({ isOpen: false, id: null, data: null })}
+                  className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (saveModal.id && saveModal.data) {
+                      handleUpdate(saveModal.id, saveModal.data);
+                      setSaveModal({ isOpen: false, id: null, data: null });
+                    }
+                  }}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-emerald-700 shadow-lg shadow-emerald-600/20"
+                >
+                  Save Changes
                 </button>
               </div>
             </motion.div>
