@@ -66,7 +66,8 @@ interface ModalState {
 }
 
 export default function DataManagement() {
-  const [clearTarget, setClearTarget] = useState<string>('all');
+  const [maintenanceTarget, setMaintenanceTarget] = useState<string>('all');
+  const [maintenanceAction, setMaintenanceAction] = useState<'clear_all' | 'clear_facility'>('clear_all');
   const [deleteFacility, setDeleteFacility] = useState<string>('');
   const [importMode, setImportMode] = useState<'auto' | 'specific'>('auto');
   const [targetCollection, setTargetCollection] = useState<string>('products');
@@ -78,20 +79,6 @@ export default function DataManagement() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const closeModal = () => setModal(prev => ({ ...prev, isOpen: false }));
-
-  const handleDownloadTemplate = () => {
-    const wb = XLSX.utils.book_new();
-    
-    Object.entries(SHEET_MAPPING).forEach(([sheetName, collectionId]) => {
-      const headers = TEMPLATES[collectionId];
-      if (headers) {
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
-        XLSX.utils.book_append_sheet(wb, ws, sheetName);
-      }
-    });
-    
-    XLSX.writeFile(wb, `Tooling_Management_Template.xlsx`);
-  };
 
   const clearCollection = async (collectionName: string) => {
     const q = query(collection(db, collectionName));
@@ -118,13 +105,15 @@ export default function DataManagement() {
     return totalDeleted;
   };
 
-  const clearByFacility = async (facilityName: string) => {
+  const clearByFacility = async (facilityName: string, targetCollection: string) => {
     const batches = [];
     let batch = writeBatch(db);
     let count = 0;
     let totalDeleted = 0;
 
-    for (const col of COLLECTIONS) {
+    const collectionsToClear = targetCollection === 'all' ? COLLECTIONS : COLLECTIONS.filter(c => c.id === targetCollection);
+
+    for (const col of collectionsToClear) {
       const q = query(collection(db, col.id), where('facility', '==', facilityName));
       const snapshot = await getDocs(q);
       
@@ -545,78 +534,8 @@ export default function DataManagement() {
     });
   };
 
-  const handleClearClick = async () => {
-    const targetLabel = clearTarget === 'all' ? 'ALL Collections' : COLLECTIONS.find(c => c.id === clearTarget)?.label;
-    
-    setLoading(true);
-    let estimatedWrites = 0;
-    try {
-      if (clearTarget === 'all') {
-        for (const col of COLLECTIONS) {
-          estimatedWrites += await getCollectionSize(col.id);
-        }
-      } else {
-        estimatedWrites = await getCollectionSize(clearTarget);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-
-    const quotaWarning = estimatedWrites > 1000 ? `\n\n⚠️ WARNING: This operation involves approximately ${estimatedWrites.toLocaleString()} write units. You have a daily limit of 20,000 writes on the free tier.` : '';
-
-    setModal({
-      isOpen: true,
-      title: 'Confirm Clear Data',
-      message: `Are you absolutely sure you want to clear data in "${targetLabel}"? This action CANNOT be undone.${quotaWarning}`,
-      type: 'danger',
-      confirmText: 'Yes, Clear Data',
-      onCancel: closeModal,
-      onConfirm: async () => {
-        closeModal();
-        setLoading(true);
-        try {
-          let totalDeleted = 0;
-          if (clearTarget === 'all') {
-            for (const col of COLLECTIONS) {
-              totalDeleted += await clearCollection(col.id);
-            }
-          } else {
-            totalDeleted = await clearCollection(clearTarget);
-          }
-
-          await logAuditAction('Clear Data', `Cleared ${totalDeleted} records from ${targetLabel}`);
-
-          sessionStorage.removeItem('cachedFacilities');
-
-          setModal({
-            isOpen: true,
-            title: 'Clear Successful',
-            message: `Successfully deleted ${totalDeleted} records from ${targetLabel}.`,
-            type: 'success',
-            onConfirm: closeModal,
-            confirmText: 'OK'
-          });
-        } catch (err: any) {
-          console.error(err);
-          setModal({
-            isOpen: true,
-            title: 'Clear Failed',
-            message: getFirestoreErrorMessage(err),
-            type: 'danger',
-            onConfirm: closeModal,
-            confirmText: 'OK'
-          });
-        } finally {
-          setLoading(false);
-        }
-      }
-    });
-  };
-
-  const handleClearByFacilityClick = async () => {
-    if (!deleteFacility.trim()) {
+  const handleMaintenanceExecute = async () => {
+    if (maintenanceAction === 'clear_facility' && !deleteFacility.trim()) {
       setModal({
         isOpen: true,
         title: 'Error',
@@ -628,10 +547,38 @@ export default function DataManagement() {
       return;
     }
 
+    const targetLabel = maintenanceTarget === 'all' ? 'ALL SECTIONS' : COLLECTIONS.find(c => c.id === maintenanceTarget)?.label;
+    
+    let estimatedWrites = 0;
+    let quotaWarning = '';
+
+    if (maintenanceAction === 'clear_all') {
+      setLoading(true);
+      try {
+        if (maintenanceTarget === 'all') {
+          for (const col of COLLECTIONS) {
+            estimatedWrites += await getCollectionSize(col.id);
+          }
+        } else {
+          estimatedWrites = await getCollectionSize(maintenanceTarget);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+      quotaWarning = estimatedWrites > 1000 ? `\n\n⚠️ WARNING: This operation involves approximately ${estimatedWrites.toLocaleString()} write units. You have a daily limit of 20,000 writes on the free tier.` : '';
+    }
+
+    const modalTitle = maintenanceAction === 'clear_all' ? 'Confirm Clear Data' : 'Confirm Delete by Facility';
+    const modalMessage = maintenanceAction === 'clear_all' 
+      ? `Are you absolutely sure you want to clear ALL data in "${targetLabel}"? This action CANNOT be undone.${quotaWarning}`
+      : `Are you absolutely sure you want to delete data for facility "${deleteFacility}" in "${targetLabel}"? This action CANNOT be undone.`;
+
     setModal({
       isOpen: true,
-      title: 'Confirm Delete by Facility',
-      message: `Are you absolutely sure you want to delete ALL data for facility "${deleteFacility}" across all collections? This action CANNOT be undone.`,
+      title: modalTitle,
+      message: modalMessage,
       type: 'danger',
       confirmText: 'Yes, Delete Data',
       onCancel: closeModal,
@@ -639,21 +586,36 @@ export default function DataManagement() {
         closeModal();
         setLoading(true);
         try {
-          const totalDeleted = await clearByFacility(deleteFacility);
-
-          await logAuditAction('Delete by Facility', `Deleted ${totalDeleted} records for facility ${deleteFacility}`);
+          let totalDeleted = 0;
           
+          if (maintenanceAction === 'clear_all') {
+            if (maintenanceTarget === 'all') {
+              for (const col of COLLECTIONS) {
+                totalDeleted += await clearCollection(col.id);
+              }
+            } else {
+              totalDeleted = await clearCollection(maintenanceTarget);
+            }
+            await logAuditAction('Clear Data', `Cleared ${totalDeleted} records from ${targetLabel}`);
+          } else {
+            totalDeleted = await clearByFacility(deleteFacility, maintenanceTarget);
+            await logAuditAction('Delete by Facility', `Deleted ${totalDeleted} records for facility ${deleteFacility} in ${targetLabel}`);
+          }
+
           sessionStorage.removeItem('cachedFacilities');
 
           setModal({
             isOpen: true,
             title: 'Delete Successful',
-            message: `Successfully deleted ${totalDeleted} records for facility "${deleteFacility}".`,
+            message: `Successfully deleted ${totalDeleted} records.`,
             type: 'success',
             onConfirm: closeModal,
             confirmText: 'OK'
           });
-          setDeleteFacility('');
+          
+          if (maintenanceAction === 'clear_facility') {
+            setDeleteFacility('');
+          }
         } catch (err: any) {
           console.error(err);
           setModal({
@@ -675,7 +637,7 @@ export default function DataManagement() {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-8 max-w-4xl"
+      className="space-y-6 max-w-7xl mx-auto"
     >
       {/* Quota Info */}
       <div className="surface-card p-4 flex items-start gap-4 border-l-4 border-l-amber-500">
@@ -693,10 +655,10 @@ export default function DataManagement() {
         </div>
       </div>
 
-      {/* Import Section */}
-      <div className="surface-card p-4 sm:p-8 relative overflow-hidden">
-        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-100 pb-6 gap-4">
-          <div className="flex items-center gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Import Section (Left Column) */}
+        <div className="surface-card p-4 sm:p-8 relative overflow-hidden flex flex-col h-full">
+          <div className="mb-6 sm:mb-8 flex items-center gap-4 border-b border-zinc-100 pb-6">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-brand-primary">
               <FileSpreadsheet className="h-6 w-6" />
             </div>
@@ -705,203 +667,254 @@ export default function DataManagement() {
               <p className="text-sm text-zinc-500">Upload Excel files to update system records</p>
             </div>
           </div>
-          <button
-            onClick={handleDownloadTemplate}
-            className="flex items-center gap-2 rounded-xl bg-zinc-50 px-4 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-100 transition-colors border border-zinc-200"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Download Template
-          </button>
-        </div>
 
-        <div className="grid gap-8 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-              Import Mode
-            </label>
-            <div className="relative">
-              <select
-                value={importMode}
-                onChange={(e) => setImportMode(e.target.value as 'auto' | 'specific')}
-                className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all appearance-none"
-              >
-                <option value="auto">Auto-Detect Sheets</option>
-                <option value="specific">Import to Specific Page</option>
-              </select>
-              <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400">
-                <Loader2 className="h-4 w-4 animate-spin hidden" />
+          <div className="flex-1 space-y-6">
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
+                Import Mode
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={cn(
+                  "flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-bold transition-all",
+                  importMode === 'auto' 
+                    ? "border-brand-primary bg-brand-primary/5 text-brand-primary" 
+                    : "border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+                )}>
+                  <input 
+                    type="radio" 
+                    name="importMode" 
+                    value="auto" 
+                    checked={importMode === 'auto'} 
+                    onChange={() => setImportMode('auto' as 'auto' | 'specific')} 
+                    className="sr-only" 
+                  />
+                  Auto-Detect Sheets
+                </label>
+                <label className={cn(
+                  "flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-bold transition-all",
+                  importMode === 'specific' 
+                    ? "border-brand-primary bg-brand-primary/5 text-brand-primary" 
+                    : "border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+                )}>
+                  <input 
+                    type="radio" 
+                    name="importMode" 
+                    value="specific" 
+                    checked={importMode === 'specific'} 
+                    onChange={() => setImportMode('specific' as 'auto' | 'specific')} 
+                    className="sr-only" 
+                  />
+                  Specific Page
+                </label>
               </div>
             </div>
-            <p className="text-[10px] text-zinc-400 ml-1">
-              {importMode === 'auto' ? 'System will automatically match sheets to collections.' : 'System will force import to the selected page.'}
-            </p>
-          </div>
-          
-          {importMode === 'specific' && (
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="space-y-2"
-            >
-              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-                Target Page
-              </label>
-              <select
-                value={targetCollection}
-                onChange={(e) => setTargetCollection(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all appearance-none"
-              >
-                {COLLECTIONS.map(col => (
-                  <option key={col.id} value={col.id}>{col.label}</option>
-                ))}
-              </select>
-            </motion.div>
-          )}
 
-          <div className="md:col-span-2 space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-              Excel Files (.xlsx, .xls)
-            </label>
-            <div className="relative group">
-              <input
-                type="file"
-                accept=".xlsx, .xls, .csv, .xlsm"
-                multiple
-                ref={fileInputRef}
-                onChange={(e) => setFiles(e.target.files)}
-                className="w-full rounded-xl border-2 border-dashed border-zinc-200/80 bg-zinc-50/30 px-4 py-8 text-sm transition-all hover:border-brand-primary/50 hover:bg-zinc-50 focus:outline-none file:mr-4 file:rounded-full file:border-0 file:bg-brand-primary file:px-4 sm:file:px-6 file:py-2 file:text-[10px] sm:file:text-xs file:font-bold file:text-white hover:file:bg-zinc-800 cursor-pointer text-transparent"
-              />
-              {!files && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-zinc-400 text-xs font-medium px-4 text-center">
-                  Drag and drop or click to select files
+            <AnimatePresence mode="wait">
+              {importMode === 'specific' && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-2 overflow-hidden"
+                >
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
+                    Target Page
+                  </label>
+                  <select
+                    value={targetCollection}
+                    onChange={(e) => setTargetCollection(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all appearance-none"
+                  >
+                    {COLLECTIONS.map(col => (
+                      <option key={col.id} value={col.id}>{col.label}</option>
+                    ))}
+                  </select>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
+                Excel Files (.xlsx, .xls)
+              </label>
+              <div className="relative group">
+                <input
+                  type="file"
+                  accept=".xlsx, .xls, .csv, .xlsm"
+                  multiple
+                  ref={fileInputRef}
+                  onChange={(e) => setFiles(e.target.files)}
+                  className="w-full rounded-xl border-2 border-dashed border-zinc-200/80 bg-zinc-50/30 px-4 py-8 text-sm transition-all hover:border-brand-primary/50 hover:bg-zinc-50 focus:outline-none file:mr-4 file:rounded-full file:border-0 file:bg-brand-primary file:px-4 sm:file:px-6 file:py-2 file:text-[10px] sm:file:text-xs file:font-bold file:text-white hover:file:bg-zinc-800 cursor-pointer text-transparent"
+                />
+                {!files && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-zinc-400 text-xs font-medium px-4 text-center">
+                    Drag and drop or click to select files
+                  </div>
+                )}
+              </div>
+              {files && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {Array.from(files as any).map((file: any, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-bold text-zinc-700 border border-zinc-200/80">
+                      <FileSpreadsheet className="h-3 w-3" />
+                      {file.name}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
-            {files && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {Array.from(files as any).map((file: any, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-bold text-zinc-700 border border-zinc-200/80">
-                    <FileSpreadsheet className="h-3 w-3" />
-                    {file.name}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
 
-          <div className="md:col-span-2 space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-              Facility Override (Optional)
-            </label>
-            <input
-              type="text"
-              value={globalFacility}
-              onChange={(e) => setGlobalFacility(e.target.value)}
-              placeholder="e.g. FACILITY_A"
-              className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all"
-            />
-            <p className="text-[10px] text-zinc-400 ml-1">If set, all imported records will be assigned this facility name.</p>
-          </div>
-        </div>
-
-        <div className="mt-8 flex flex-col sm:flex-row sm:items-center justify-between border-t border-zinc-100 pt-6 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                id="clearBeforeImport"
-                checked={clearBeforeImport}
-                onChange={(e) => setClearBeforeImport(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary shrink-0"></div>
-              <label htmlFor="clearBeforeImport" className="ml-3 text-sm font-medium text-zinc-700">
-                Clear existing data before importing
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
+                Facility Override (Optional)
               </label>
+              <input
+                type="text"
+                value={globalFacility}
+                onChange={(e) => setGlobalFacility(e.target.value)}
+                placeholder="e.g. FACILITY_A"
+                className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all"
+              />
             </div>
           </div>
 
-          <button
-            onClick={handleImportClick}
-            disabled={loading || !files || files.length === 0}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-brand-primary px-8 py-3 text-sm font-bold text-white transition-all hover:bg-zinc-800 disabled:opacity-50 shadow-lg shadow-brand-primary/20 active:scale-[0.98]"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {loading ? 'Processing...' : 'Start Import'}
-          </button>
-        </div>
-      </div>
+          <div className="mt-8 space-y-4 border-t border-zinc-100 pt-6">
+            <div className="flex items-center gap-3">
+              <label htmlFor="clearBeforeImport" className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="clearBeforeImport"
+                  checked={clearBeforeImport}
+                  onChange={(e) => setClearBeforeImport(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary shrink-0"></div>
+                <span className="ml-3 text-sm font-medium text-zinc-700">
+                  Clear existing data before importing
+                </span>
+              </label>
+            </div>
 
-      {/* Clear Section */}
-      <div className="surface-card p-4 sm:p-8 relative overflow-hidden">
-        <div className="mb-6 sm:mb-8 flex items-center gap-4 border-b border-zinc-100 pb-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-brand-primary">
-            <DatabaseBackup className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-zinc-900">Maintenance</h3>
-            <p className="text-sm text-zinc-500">Bulk delete records from system collections</p>
-          </div>
-        </div>
-
-        <div className="grid gap-8 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-              Target Section to Clear
-            </label>
-            <select
-              value={clearTarget}
-              onChange={(e) => setClearTarget(e.target.value)}
-              className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all appearance-none"
-            >
-              <option value="all">⚠️ ALL SECTIONS (Clear Everything)</option>
-              {COLLECTIONS.map(col => (
-                <option key={col.id} value={col.id}>{col.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-end">
             <button
-              onClick={handleClearClick}
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:opacity-50 shadow-lg shadow-red-600/20 active:scale-[0.98]"
+              onClick={handleImportClick}
+              disabled={loading || !files || files.length === 0}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-8 py-3 text-sm font-bold text-white transition-all hover:bg-zinc-800 disabled:opacity-50 shadow-lg shadow-brand-primary/20 active:scale-[0.98]"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              {loading ? 'Processing...' : 'Clear Selected Data'}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {loading ? 'Processing...' : 'Start Import'}
             </button>
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-zinc-100 grid gap-8 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-              Delete by Facility
-            </label>
-            <input
-              type="text"
-              value={deleteFacility}
-              onChange={(e) => setDeleteFacility(e.target.value)}
-              placeholder="Enter Facility name..."
-              className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all"
-            />
+        {/* Maintenance Section (Right Column) */}
+        <div className="surface-card p-4 sm:p-8 relative overflow-hidden flex flex-col h-full">
+          <div className="mb-6 sm:mb-8 flex items-center gap-4 border-b border-zinc-100 pb-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-brand-primary">
+              <DatabaseBackup className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-zinc-900">Maintenance</h3>
+              <p className="text-sm text-zinc-500">Bulk delete records from system collections</p>
+            </div>
           </div>
 
-          <div className="flex items-end">
-            <button
-              onClick={handleClearByFacilityClick}
-              disabled={loading || !deleteFacility.trim()}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:opacity-50 shadow-lg shadow-red-600/20 active:scale-[0.98]"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              {loading ? 'Processing...' : 'Delete Facility Data'}
-            </button>
+          <div className="flex-1 space-y-8">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
+                  Target Section
+                </label>
+                <select
+                  value={maintenanceTarget}
+                  onChange={(e) => setMaintenanceTarget(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all appearance-none"
+                >
+                  <option value="all">⚠️ ALL SECTIONS</option>
+                  {COLLECTIONS.map(col => (
+                    <option key={col.id} value={col.id}>{col.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
+                  Action Type
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className={cn(
+                    "flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-bold transition-all",
+                    maintenanceAction === 'clear_all' 
+                      ? "border-red-500 bg-red-50 text-red-700" 
+                      : "border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+                  )}>
+                    <input 
+                      type="radio" 
+                      name="maintenanceAction" 
+                      value="clear_all" 
+                      checked={maintenanceAction === 'clear_all'} 
+                      onChange={() => setMaintenanceAction('clear_all')} 
+                      className="sr-only" 
+                    />
+                    Clear Entire Section
+                  </label>
+                  <label className={cn(
+                    "flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-bold transition-all",
+                    maintenanceAction === 'clear_facility' 
+                      ? "border-red-500 bg-red-50 text-red-700" 
+                      : "border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+                  )}>
+                    <input 
+                      type="radio" 
+                      name="maintenanceAction" 
+                      value="clear_facility" 
+                      checked={maintenanceAction === 'clear_facility'} 
+                      onChange={() => setMaintenanceAction('clear_facility')} 
+                      className="sr-only" 
+                    />
+                    Delete by Facility
+                  </label>
+                </div>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {maintenanceAction === 'clear_facility' && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-2 overflow-hidden"
+                  >
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
+                      Facility Name
+                    </label>
+                    <input
+                      type="text"
+                      value={deleteFacility}
+                      onChange={(e) => setDeleteFacility(e.target.value)}
+                      placeholder="Enter Facility name..."
+                      className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all"
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="pt-4">
+                <button
+                  onClick={handleMaintenanceExecute}
+                  disabled={loading || (maintenanceAction === 'clear_facility' && !deleteFacility.trim())}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:opacity-50 shadow-lg shadow-red-600/20 active:scale-[0.98]"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  {loading ? 'Processing...' : (maintenanceAction === 'clear_all' ? 'Clear Section Data' : 'Delete Facility Data')}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <div className="mt-6 flex items-center gap-2 text-[10px] text-zinc-400 font-medium bg-zinc-50 p-3 rounded-lg">
-          <AlertTriangle className="h-3 w-3 text-amber-500" />
-          <span>Warning: This action is destructive and cannot be undone. Always backup your data before clearing.</span>
+          
+          <div className="mt-8 flex items-center gap-2 text-[10px] text-zinc-400 font-medium bg-zinc-50 p-3 rounded-lg">
+            <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+            <span>Warning: This action is destructive and cannot be undone. Always backup your data before clearing.</span>
+          </div>
         </div>
       </div>
 
