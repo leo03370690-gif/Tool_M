@@ -6,9 +6,9 @@
   --font-serif: "Cormorant Garamond", serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --color-brand-primary: #09090b; /* zinc-950 for deeper contrast */
-  --color-brand-accent: #F27D26;
-  --color-bg-canvas: #fafafa; /* slightly lighter, cleaner canvas */
+  --color-brand-primary: var(--theme-primary);
+  --color-brand-accent: var(--theme-accent);
+  --color-bg-canvas: var(--theme-bg);
   
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
@@ -16,8 +16,39 @@
 }
 
 @layer base {
+  :root {
+    /* Default Zinc Theme */
+    --theme-primary: #09090b;
+    --theme-accent: #F27D26;
+    --theme-bg: #fafafa;
+  }
+
+  .theme-ocean {
+    --theme-primary: #020617;
+    --theme-accent: #0284c7;
+    --theme-bg: #f0f9ff;
+  }
+
+  .theme-forest {
+    --theme-primary: #052e16;
+    --theme-accent: #16a34a;
+    --theme-bg: #f0fdf4;
+  }
+
+  .theme-sunset {
+    --theme-primary: #431407;
+    --theme-accent: #ea580c;
+    --theme-bg: #fff7ed;
+  }
+
+  .theme-royal {
+    --theme-primary: #2e1065;
+    --theme-accent: #7c3aed;
+    --theme-bg: #faf5ff;
+  }
+
   body {
-    @apply bg-bg-canvas text-brand-primary antialiased selection:bg-brand-accent selection:text-white;
+    @apply bg-bg-canvas text-brand-primary antialiased selection:bg-brand-accent selection:text-white transition-colors duration-500;
   }
 }
 

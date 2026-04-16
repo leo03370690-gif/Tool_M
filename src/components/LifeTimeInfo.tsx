@@ -123,6 +123,7 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
   }, [allRecords, selectedFacility]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [newRecord, setNewRecord] = useState<Partial<LifeTime>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
@@ -135,6 +136,16 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
     'facility', 'socketGroup', 'pogoPin1Pn', 'pogoPinQty', 'lifeTime', 'loadBoardGroup', 'remark'
   ]);
   const [displayCount, setDisplayCount] = useState(100);
+
+  const handleAdd = async () => {
+    if (!newRecord.socketGroup) return;
+    await addDoc(collection(db, 'lifeTimes'), {
+      ...newRecord,
+      facility: selectedFacility === 'ALL' ? (newRecord.facility || '') : selectedFacility
+    });
+    setNewRecord({});
+    setEditingId(null);
+  };
 
   const handleUpdate = async (id: string, data: Partial<LifeTime>) => {
     await updateDoc(doc(db, 'lifeTimes', id), data);
@@ -206,14 +217,8 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
         </div>
         {isAdmin && (
           <button 
-            onClick={async () => {
-              const docRef = await addDoc(collection(db, 'lifeTimes'), { 
-                socketGroup: 'NEW_GROUP',
-                facility: selectedFacility === 'ALL' ? '' : selectedFacility
-              });
-              setEditingId(docRef.id);
-            }}
-            className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
+            onClick={() => setEditingId('new')}
+            className="flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
           >
             <Plus className="h-4 w-4" />
             <span>ADD RECORD</span>
@@ -304,6 +309,31 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
             </thead>
             <tbody className="divide-y divide-zinc-50">
               <AnimatePresence mode="popLayout">
+                {editingId === 'new' && (
+                  <motion.tr 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className="bg-zinc-50/30"
+                  >
+                    {columns.map(col => (
+                      <td key={col.key} className="px-6 py-3">
+                        <input
+                          type="text"
+                          autoFocus={col.key === 'facility'}
+                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all"
+                          onChange={(e) => setNewRecord({ ...newRecord, [col.key]: e.target.value })}
+                        />
+                      </td>
+                    ))}
+                    <td className="px-6 py-3 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={handleAdd} className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"><Check className="h-4 w-4" /></button>
+                        <button onClick={() => setEditingId(null)} className="p-2 rounded-lg bg-zinc-100 text-zinc-400 hover:bg-zinc-200 transition-colors"><X className="h-4 w-4" /></button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                )}
                 {filteredRecords.slice(0, displayCount).map((record, idx) => (
                   <LifeTimeRow
                     key={record.id}

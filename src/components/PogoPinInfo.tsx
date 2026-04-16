@@ -231,6 +231,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   }, [allPins, selectedFacility]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [newPin, setNewPin] = useState<Partial<PogoPin>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [viewMode, setViewMode] = usePersistentState<'card' | 'table'>('pogoPinInfo_viewMode', 'card');
@@ -239,6 +240,16 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   const [displayCount, setDisplayCount] = useState(100);
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
   const [saveModal, setSaveModal] = useState<{isOpen: boolean, id: string | null, data: any | null}>({ isOpen: false, id: null, data: null });
+
+  const handleAdd = async () => {
+    if (!newPin.pinPn) return;
+    await addDoc(collection(db, 'pogoPins'), {
+      ...newPin,
+      facility: selectedFacility === 'ALL' ? (newPin.facility || '') : selectedFacility
+    });
+    setNewPin({});
+    setEditingId(null);
+  };
 
   const handleUpdate = async (id: string, data: Partial<PogoPin>) => {
     await updateDoc(doc(db, 'pogoPins', id), data);
@@ -342,15 +353,8 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
           </div>
           {isAdmin && (
             <button 
-              onClick={async () => {
-                const docRef = await addDoc(collection(db, 'pogoPins'), { 
-                  pinPn: 'NEW_PIN', 
-                  qty: 0, 
-                  facility: selectedFacility === 'ALL' ? '' : selectedFacility 
-                });
-                setEditingId(docRef.id);
-              }}
-              className="flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 transition-all shadow-lg shadow-black/10 active:scale-95"
+              onClick={() => setEditingId('new')}
+              className="flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-all shadow-lg shadow-black/10 active:scale-95"
             >
               <Plus className="h-4 w-4" />
               <span>ADD PIN</span>
@@ -370,6 +374,39 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
             className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
           >
             <AnimatePresence mode="popLayout">
+              {editingId === 'new' && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white p-6 card-shadow border-2 border-brand-primary/20"
+                >
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      placeholder="Facility"
+                      className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none"
+                      onChange={(e) => setNewPin({ ...newPin, facility: e.target.value })}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Pin P/N"
+                      className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none"
+                      onChange={(e) => setNewPin({ ...newPin, pinPn: e.target.value })}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Quantity"
+                      className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none"
+                      onChange={(e) => setNewPin({ ...newPin, qty: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="mt-6 flex gap-2">
+                    <button onClick={handleAdd} className="flex-1 rounded-xl bg-emerald-50 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-100 transition-all">SAVE</button>
+                    <button onClick={() => setEditingId(null)} className="p-2.5 rounded-xl bg-zinc-50 text-zinc-400 hover:bg-zinc-100 transition-all"><X className="h-4 w-4" /></button>
+                  </div>
+                </motion.div>
+              )}
               {filteredPins.slice(0, displayCount).map((pin) => (
                 <PinCard
                   key={pin.id}
@@ -414,7 +451,33 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-50">
-                  {filteredPins.slice(0, displayCount).map((pin, idx) => (
+                  <AnimatePresence mode="popLayout">
+                    {editingId === 'new' && (
+                      <motion.tr 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="bg-zinc-50/30"
+                      >
+                        {columns.filter(col => visibleColumns.includes(col.key)).map(col => (
+                          <td key={col.key} className="px-6 py-3">
+                            <input
+                              type="text"
+                              autoFocus={col.key === 'facility'}
+                              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all"
+                              onChange={(e) => setNewPin({ ...newPin, [col.key]: col.key === 'qty' ? (parseInt(e.target.value) || 0) : e.target.value })}
+                            />
+                          </td>
+                        ))}
+                        <td className="px-6 py-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={handleAdd} className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"><Check className="h-4 w-4" /></button>
+                            <button onClick={() => setEditingId(null)} className="p-2 rounded-lg bg-zinc-100 text-zinc-400 hover:bg-zinc-200 transition-colors"><X className="h-4 w-4" /></button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    )}
+                    {filteredPins.slice(0, displayCount).map((pin, idx) => (
                     <PinRow
                       key={pin.id}
                       pin={pin}
@@ -429,6 +492,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                       setSaveModal={setSaveModal}
                     />
                   ))}
+                  </AnimatePresence>
                   {filteredPins.length > displayCount && (
                     <tr>
                       <td colSpan={visibleColumns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">

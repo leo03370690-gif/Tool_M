@@ -10,6 +10,7 @@ import { Loader2, AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { DataProvider } from './contexts/DataContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -96,60 +97,62 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-canvas">
-      <AnimatePresence>
-        {quotaExceeded && (
-          <motion.div
-            initial={{ y: -100 }}
-            animate={{ y: 0 }}
-            exit={{ y: -100 }}
-            className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-6 py-3 shadow-2xl flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5" />
-              <p className="text-sm font-bold tracking-wide">
-                系統配額已達上限（每日寫入額度已滿）。部分功能（如匯入、刪除、修改）將暫時無法使用。
-              </p>
-            </div>
-            <button 
-              onClick={() => setQuotaExceeded(false)}
-              className="p-1 hover:bg-white/20 rounded-full transition-colors"
+    <ThemeProvider>
+      <div className="min-h-screen bg-bg-canvas">
+        <AnimatePresence>
+          {quotaExceeded && (
+            <motion.div
+              initial={{ y: -100 }}
+              animate={{ y: 0 }}
+              exit={{ y: -100 }}
+              className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-6 py-3 shadow-2xl flex items-center justify-between"
             >
-              <X className="h-5 w-5" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5" />
+                <p className="text-sm font-bold tracking-wide">
+                  系統配額已達上限（每日寫入額度已滿）。部分功能（如匯入、刪除、修改）將暫時無法使用。
+                </p>
+              </div>
+              <button 
+                onClick={() => setQuotaExceeded(false)}
+                className="p-1 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      <Router>
-        <Routes>
-          <Route 
-            path="/login" 
-            element={user ? <Navigate to="/" /> : <Login />} 
-          />
-          <Route 
-            path="/*" 
-            element={
-              user ? (
-                selectedFacility ? (
-                  <DataProvider>
-                    <Dashboard 
-                      user={user} 
-                      role={role} 
-                      selectedFacility={selectedFacility} 
-                      onBackToFacility={() => setSelectedFacility(null)} 
-                    />
-                  </DataProvider>
+        <Router>
+          <Routes>
+            <Route 
+              path="/login" 
+              element={user ? <Navigate to="/" /> : <Login />} 
+            />
+            <Route 
+              path="/*" 
+              element={
+                user ? (
+                  selectedFacility ? (
+                    <DataProvider>
+                      <Dashboard 
+                        user={user} 
+                        role={role} 
+                        selectedFacility={selectedFacility} 
+                        onBackToFacility={() => setSelectedFacility(null)} 
+                      />
+                    </DataProvider>
+                  ) : (
+                    <FacilitySelection onSelect={setSelectedFacility} />
+                  )
                 ) : (
-                  <FacilitySelection onSelect={setSelectedFacility} />
+                  <Navigate to="/login" />
                 )
-              ) : (
-                <Navigate to="/login" />
-              )
-            } 
-          />
-        </Routes>
-      </Router>
-    </div>
+              } 
+            />
+          </Routes>
+        </Router>
+      </div>
+    </ThemeProvider>
   );
 }

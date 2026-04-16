@@ -3,6 +3,7 @@ import { auth } from '../firebase';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { KeyRound, ShieldCheck, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { ThemeSwitcher } from './ThemeSwitcher';
 
 export default function Settings() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -61,8 +62,10 @@ export default function Settings() {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-8 max-w-2xl"
+      className="space-y-8 max-w-3xl"
     >
+      <ThemeSwitcher />
+
       <div className="surface-card p-4 sm:p-8">
         <div className="mb-8 flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white">
@@ -145,7 +148,7 @@ export default function Settings() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-6 py-3 text-sm font-bold text-white transition-all hover:bg-zinc-800 disabled:opacity-50 shadow-sm"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-6 py-3 text-sm font-bold text-white transition-all hover:opacity-90 disabled:opacity-50 shadow-sm"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
               {loading ? 'Updating Password...' : 'Update Password'}

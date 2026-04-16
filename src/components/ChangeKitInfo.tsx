@@ -123,6 +123,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
   }, [allKits, selectedFacility]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [newKit, setNewKit] = useState<Partial<ChangeKit>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [viewMode, setViewMode] = useState<'list' | 'stats'>('list');
@@ -136,6 +137,16 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
     'facility', 'location', 'kind', 'toolsId', 'packageSize', 'changeKitGroup', 'status', 'idleTime'
   ]);
   const [displayCount, setDisplayCount] = useState(100);
+
+  const handleAdd = async () => {
+    if (!newKit.toolsId) return;
+    await addDoc(collection(db, 'changeKits'), {
+      ...newKit,
+      facility: selectedFacility === 'ALL' ? (newKit.facility || '') : selectedFacility
+    });
+    setNewKit({});
+    setEditingId(null);
+  };
 
   const handleUpdate = async (id: string, data: Partial<ChangeKit>) => {
     await updateDoc(doc(db, 'changeKits', id), data);
@@ -250,14 +261,8 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
           </div>
           {isAdmin && (
             <button 
-              onClick={async () => {
-                const docRef = await addDoc(collection(db, 'changeKits'), { 
-                  toolsId: 'NEW_KIT',
-                  facility: selectedFacility === 'ALL' ? '' : selectedFacility
-                });
-                setEditingId(docRef.id);
-              }}
-              className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
+              onClick={() => setEditingId('new')}
+              className="flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
             >
               <Plus className="h-4 w-4" />
               <span>ADD KIT</span>
@@ -352,7 +357,33 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-50">
-                  {filteredKits.slice(0, displayCount).map((kit, idx) => (
+                  <AnimatePresence mode="popLayout">
+                    {editingId === 'new' && (
+                      <motion.tr 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="bg-zinc-50/30"
+                      >
+                        {columns.map(col => (
+                          <td key={col.key} className="px-6 py-3">
+                            <input
+                              type="text"
+                              autoFocus={col.key === 'facility'}
+                              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all"
+                              onChange={(e) => setNewKit({ ...newKit, [col.key]: e.target.value })}
+                            />
+                          </td>
+                        ))}
+                        <td className="px-6 py-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={handleAdd} className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"><Check className="h-4 w-4" /></button>
+                            <button onClick={() => setEditingId(null)} className="p-2 rounded-lg bg-zinc-100 text-zinc-400 hover:bg-zinc-200 transition-colors"><X className="h-4 w-4" /></button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    )}
+                    {filteredKits.slice(0, displayCount).map((kit, idx) => (
                     <KitRow
                       key={kit.id}
                       kit={kit}
@@ -366,6 +397,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                       setSaveModal={setSaveModal}
                     />
                   ))}
+                  </AnimatePresence>
                   {filteredKits.length > displayCount && (
                     <tr>
                       <td colSpan={columns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
