@@ -29,7 +29,7 @@ const TEMPLATES: Record<string, string[]> = {
   products: [
     'facility', 'device', 'projectName', 'nickname', 'tester', 'handler', 'temperature',
     'insertion', 'siteNumber', 'ballCountDevice', 'changeKitGroup',
-    'kitName1', 'kitName2', 'kitName3', 'kitName4', 'lbGroup',
+    'kitName1', 'kitName2', 'kitName3', 'kitName4', 'kitName5', 'kitName6', 'lbGroup',
     'socketName1', 'socketName2'
   ],
   sockets: [
@@ -191,6 +191,8 @@ export default function DataManagement() {
       'kitName2': ['kit2'],
       'kitName3': ['kit3'],
       'kitName4': ['kit4'],
+      'kitName5': ['kit5'],
+      'kitName6': ['kit6'],
       'socketName1': ['socket1'],
       'socketName2': ['socket2'],
       'lbGroup': ['lbgroup', 'loadboardgroup'],

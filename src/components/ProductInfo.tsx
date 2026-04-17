@@ -27,6 +27,8 @@ interface Product {
   kitName2: string;
   kitName3: string;
   kitName4: string;
+  kitName5: string;
+  kitName6: string;
   lbGroup: string;
   socketName1: string;
   socketName2: string;
@@ -150,8 +152,8 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   const [filterChangeKitGroups, setFilterChangeKitGroups] = usePersistentState<string[]>('productInfo_filterChangeKitGroups', []);
   const [filterLBGroups, setFilterLBGroups] = usePersistentState<string[]>('productInfo_filterLBGroups', []);
   const [displayCount, setDisplayCount] = useState(100);
-  const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('productInfo_visibleColumns', [
-    'facility', 'device', 'projectName', 'nickname', 'tester', 'handler', 'temperature', 'insertion', 'siteNumber', 'ballCountDevice', 'changeKitGroup', 'kitName1', 'kitName2', 'kitName3', 'kitName4', 'lbGroup', 'socketName1', 'socketName2'
+  const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('productInfo_visibleColumns_v2', [
+    'facility', 'device', 'projectName', 'nickname', 'tester', 'handler', 'temperature', 'insertion', 'siteNumber', 'ballCountDevice', 'changeKitGroup', 'kitName1', 'kitName2', 'kitName3', 'kitName4', 'kitName5', 'kitName6', 'lbGroup', 'socketName1', 'socketName2'
   ]);
 
   const [modal, setModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
@@ -253,6 +255,8 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
     { key: 'kitName2', label: 'Kit Name2' },
     { key: 'kitName3', label: 'Kit Name3' },
     { key: 'kitName4', label: 'Kit Name4' },
+    { key: 'kitName5', label: 'Kit Name5' },
+    { key: 'kitName6', label: 'Kit Name6' },
     { key: 'lbGroup', label: 'LB Group' },
     { key: 'socketName1', label: 'Socket Name1' },
     { key: 'socketName2', label: 'Socket Name2' },
