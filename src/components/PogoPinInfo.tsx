@@ -462,9 +462,9 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                     {columns.filter(col => visibleColumns.includes(col.key)).map((col, i) => (
                       <th 
                         key={col.key} 
-                        className={cn("border-b border-zinc-100", i === 0 && visibleColumns[0] === col.key && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}
+                        className={cn("px-0 py-0 border-b border-zinc-100", i === 0 && visibleColumns[0] === col.key && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}
                       >
-                        <div className="resize-x overflow-hidden px-6 py-4 min-w-[80px] max-w-[800px] flex items-center cursor-pointer hover:bg-zinc-100 transition-colors" onClick={() => handleSort(col.key)}>
+                        <div className="px-6 py-4 flex items-center cursor-pointer hover:bg-zinc-100/50 transition-colors" onClick={() => handleSort(col.key)}>
                           <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans whitespace-nowrap">
                             {col.label}
                           </span>
