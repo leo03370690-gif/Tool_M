@@ -139,11 +139,25 @@ export default function App() {
                         user={user} 
                         role={role} 
                         selectedFacility={selectedFacility} 
-                        onBackToFacility={() => setSelectedFacility(null)} 
+                        onBackToFacility={() => {
+                          Object.keys(window.sessionStorage).forEach(key => {
+                            if (key.includes('_filter')) {
+                              window.sessionStorage.removeItem(key);
+                            }
+                          });
+                          setSelectedFacility(null);
+                        }} 
                       />
                     </DataProvider>
                   ) : (
-                    <FacilitySelection onSelect={setSelectedFacility} />
+                    <FacilitySelection onSelect={(facility) => {
+                      Object.keys(window.sessionStorage).forEach(key => {
+                        if (key.includes('_filter')) {
+                          window.sessionStorage.removeItem(key);
+                        }
+                      });
+                      setSelectedFacility(facility);
+                    }} />
                   )
                 ) : (
                   <Navigate to="/login" />

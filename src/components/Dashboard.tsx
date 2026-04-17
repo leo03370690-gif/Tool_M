@@ -242,7 +242,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
                   <Loader2 className="h-8 w-8 animate-spin text-zinc-300" />
                 </div>
               }>
-                {activeTab === 'product' && <ProductInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
+                {activeTab === 'product' && <ProductInfo isAdmin={isAdmin} selectedFacility={selectedFacility} onNavigate={(tab) => setActiveTab(tab as Tab)} />}
                 {activeTab === 'socket' && <SocketInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
                 {activeTab === 'change-kit' && <ChangeKitInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
                 {activeTab === 'pogo-pin' && <PogoPinInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}

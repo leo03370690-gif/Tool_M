@@ -128,7 +128,7 @@ const ProductRow = React.memo(({
   );
 });
 
-export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
+export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: { isAdmin: boolean, selectedFacility: string, onNavigate?: (tab: string) => void }) {
   const { products: allProducts, lifeTimes: lifeTimesData, loading } = useData();
   
   const [viewMode, setViewMode] = useState<'inventory' | 'missingLifeTime'>('inventory');
@@ -651,6 +651,7 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
             device={selectedDevice}
             products={products.filter(p => p.device === selectedDevice)}
             onClose={() => setSelectedDevice(null)}
+            onNavigate={onNavigate}
           />
         )}
       </AnimatePresence>
@@ -658,7 +659,7 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   );
 }
 
-function DeviceDetailsModal({ device, products, onClose }: { device: string, products: Product[], onClose: () => void }) {
+function DeviceDetailsModal({ device, products, onClose, onNavigate }: { device: string, products: Product[], onClose: () => void, onNavigate?: (tab: string) => void }) {
   const { sockets: socketsData, changeKits: kitsData, loadBoards: loadBoardsData, lifeTimes: lifeTimesData, loading } = useData();
 
   const insertions = Array.from(new Set(products.map(p => p.insertion).filter(Boolean)));
@@ -731,9 +732,17 @@ function DeviceDetailsModal({ device, products, onClose }: { device: string, pro
                               return (
                                 <div key={`s1-${name}`} className="flex flex-col gap-2 border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
                                   <div className="flex items-start justify-between gap-2">
-                                    <span className="text-sm font-medium text-zinc-700 break-words" title={name}>
+                                    <button 
+                                      onClick={() => {
+                                        window.sessionStorage.setItem('socketInfo_filterSocketGroups', JSON.stringify([name]));
+                                        onClose();
+                                        onNavigate?.('socket');
+                                      }}
+                                      className="text-sm font-medium text-zinc-700 hover:text-brand-primary hover:underline break-words text-left" 
+                                      title={name}
+                                    >
                                       {name} <span className="text-xs text-zinc-400 font-normal whitespace-nowrap">(Name1)</span>
-                                    </span>
+                                    </button>
                                     <span className="text-lg font-light text-brand-primary shrink-0 mt-0.5">{count}</span>
                                   </div>
                                   {relatedLifeTimes.length > 0 && (
@@ -742,7 +751,20 @@ function DeviceDetailsModal({ device, products, onClose }: { device: string, pro
                                         <div key={idx} className="bg-zinc-50/80 rounded p-2 text-[11px] space-y-1 border border-zinc-100">
                                           <div className="flex justify-between items-center">
                                             <span className="text-zinc-500">Pogo Pin:</span>
-                                            <span className="font-medium text-zinc-900">{lt.pogoPin1Pn || '-'}</span>
+                                            {lt.pogoPin1Pn ? (
+                                              <button 
+                                                onClick={() => {
+                                                  window.sessionStorage.setItem('pogoPinInfo_filterPinPns', JSON.stringify([lt.pogoPin1Pn]));
+                                                  onClose();
+                                                  onNavigate?.('pogo-pin');
+                                                }}
+                                                className="font-medium text-zinc-900 hover:text-brand-primary hover:underline text-left text-right break-words max-w-[120px]"
+                                              >
+                                                {lt.pogoPin1Pn}
+                                              </button>
+                                            ) : (
+                                              <span className="font-medium text-zinc-900">-</span>
+                                            )}
                                           </div>
                                           <div className="flex justify-between items-center">
                                             <span className="text-zinc-500">Req Q'ty:</span>
@@ -773,9 +795,17 @@ function DeviceDetailsModal({ device, products, onClose }: { device: string, pro
                               return (
                                 <div key={`s2-${name}`} className="flex flex-col gap-2 border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
                                   <div className="flex items-start justify-between gap-2">
-                                    <span className="text-sm font-medium text-zinc-700 break-words" title={name}>
+                                    <button 
+                                      onClick={() => {
+                                        window.sessionStorage.setItem('socketInfo_filterSocketGroups', JSON.stringify([name]));
+                                        onClose();
+                                        onNavigate?.('socket');
+                                      }}
+                                      className="text-sm font-medium text-zinc-700 hover:text-brand-primary hover:underline break-words text-left" 
+                                      title={name}
+                                    >
                                       {name} <span className="text-xs text-zinc-400 font-normal whitespace-nowrap">(Name2)</span>
-                                    </span>
+                                    </button>
                                     <span className="text-lg font-light text-brand-primary shrink-0 mt-0.5">{count}</span>
                                   </div>
                                   {relatedLifeTimes.length > 0 && (
@@ -784,7 +814,20 @@ function DeviceDetailsModal({ device, products, onClose }: { device: string, pro
                                         <div key={idx} className="bg-zinc-50/80 rounded p-2 text-[11px] space-y-1 border border-zinc-100">
                                           <div className="flex justify-between items-center">
                                             <span className="text-zinc-500">Pogo Pin:</span>
-                                            <span className="font-medium text-zinc-900">{lt.pogoPin1Pn || '-'}</span>
+                                            {lt.pogoPin1Pn ? (
+                                              <button 
+                                                onClick={() => {
+                                                  window.sessionStorage.setItem('pogoPinInfo_filterPinPns', JSON.stringify([lt.pogoPin1Pn]));
+                                                  onClose();
+                                                  onNavigate?.('pogo-pin');
+                                                }}
+                                                className="font-medium text-zinc-900 hover:text-brand-primary hover:underline text-left text-right break-words max-w-[120px]"
+                                              >
+                                                {lt.pogoPin1Pn}
+                                              </button>
+                                            ) : (
+                                              <span className="font-medium text-zinc-900">-</span>
+                                            )}
                                           </div>
                                           <div className="flex justify-between items-center">
                                             <span className="text-zinc-500">Req Q'ty:</span>
@@ -818,9 +861,17 @@ function DeviceDetailsModal({ device, products, onClose }: { device: string, pro
                               }).length;
                               return (
                                 <div key={`kit-${name}`} className="flex items-start justify-between gap-2 border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
-                                  <span className="text-sm font-medium text-zinc-700 break-words" title={name}>
+                                  <button 
+                                    onClick={() => {
+                                      window.sessionStorage.setItem('changeKitInfo_filterChangeKitGroups', JSON.stringify([name]));
+                                      onClose();
+                                      onNavigate?.('change-kit');
+                                    }}
+                                    className="text-sm font-medium text-zinc-700 hover:text-brand-primary hover:underline break-words text-left" 
+                                    title={name}
+                                  >
                                     {name}
-                                  </span>
+                                  </button>
                                   <span className="text-lg font-light text-brand-primary shrink-0 mt-0.5">{count}</span>
                                 </div>
                               );
@@ -842,9 +893,17 @@ function DeviceDetailsModal({ device, products, onClose }: { device: string, pro
                               }).length;
                               return (
                                 <div key={`lb-${name}`} className="flex items-start justify-between gap-2 border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
-                                  <span className="text-sm font-medium text-zinc-700 break-words" title={name}>
+                                  <button 
+                                    onClick={() => {
+                                      window.sessionStorage.setItem('lbInfo_filterLBGroups', JSON.stringify([name]));
+                                      onClose();
+                                      onNavigate?.('load-board');
+                                    }}
+                                    className="text-sm font-medium text-zinc-700 hover:text-brand-primary hover:underline break-words text-left" 
+                                    title={name}
+                                  >
                                     {name}
-                                  </span>
+                                  </button>
                                   <span className="text-lg font-light text-brand-primary shrink-0 mt-0.5">{count}</span>
                                 </div>
                               );
