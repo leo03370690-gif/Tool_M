@@ -129,8 +129,10 @@ const ProductRow = React.memo(({
 });
 
 export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
-  const { products: allProducts, loading } = useData();
+  const { products: allProducts, lifeTimes: lifeTimesData, loading } = useData();
   
+  const [viewMode, setViewMode] = useState<'inventory' | 'missingLifeTime'>('inventory');
+
   const products = useMemo(() => {
     let data = [...allProducts];
     if (selectedFacility !== 'ALL') {
@@ -264,17 +266,98 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
 
   const columns = allColumns.filter(col => visibleColumns.includes(col.key));
 
+  const missingLifeTimeData = React.useMemo(() => {
+    if (viewMode !== 'missingLifeTime') return [];
+    
+    const missing: {
+      id: string;
+      facility: string;
+      device: string;
+      insertion: string;
+      socketName: string;
+      socketType: 'Socket 1' | 'Socket 2';
+    }[] = [];
+
+    products.forEach(p => {
+      // Check socketName1
+      if (p.socketName1) {
+        const names1 = p.socketName1.split(',').map(s => s.trim()).filter(Boolean);
+        names1.forEach(name => {
+          const related = lifeTimesData.filter(lt => {
+            const ltGroups = (lt.socketGroup || '').split(',').map((s: string) => s.trim());
+            return ltGroups.includes(name);
+          });
+          if (related.length === 0) {
+            missing.push({
+              id: `${p.id}-1-${name}`,
+              facility: p.facility || '-',
+              device: p.device || '-',
+              insertion: p.insertion || '-',
+              socketName: name,
+              socketType: 'Socket 1'
+            });
+          }
+        });
+      }
+      
+      // Check socketName2
+      if (p.socketName2) {
+        const names2 = p.socketName2.split(',').map(s => s.trim()).filter(Boolean);
+        names2.forEach(name => {
+          const related = lifeTimesData.filter(lt => {
+            const ltGroups = (lt.socketGroup || '').split(',').map((s: string) => s.trim());
+            return ltGroups.includes(name);
+          });
+          if (related.length === 0) {
+            missing.push({
+              id: `${p.id}-2-${name}`,
+              facility: p.facility || '-',
+              device: p.device || '-',
+              insertion: p.insertion || '-',
+              socketName: name,
+              socketType: 'Socket 2'
+            });
+          }
+        });
+      }
+    });
+
+    return missing;
+  }, [products, lifeTimesData, viewMode]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">Product Inventory</h2>
-          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">Manage your tooling assets</p>
+        <div className="space-y-4">
+          <div>
+            <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">Product Inventory</h2>
+            <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">Manage your tooling assets</p>
+          </div>
+          <div className="flex gap-2 bg-zinc-100/80 p-1.5 rounded-xl w-fit">
+            <button
+              onClick={() => setViewMode('inventory')}
+              className={cn(
+                "px-5 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                viewMode === 'inventory' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50"
+              )}
+            >
+              Inventory
+            </button>
+            <button
+              onClick={() => setViewMode('missingLifeTime')}
+              className={cn(
+                "px-5 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                viewMode === 'missingLifeTime' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50"
+              )}
+            >
+              Missing Life Time Check
+            </button>
+          </div>
         </div>
-        {isAdmin && (
+        {isAdmin && viewMode === 'inventory' && (
           <button 
             onClick={() => setEditingId('new')}
-            className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
+            className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap mb-2 sm:mb-0"
           >
             <Plus className="h-4 w-4" />
             <span>ADD PRODUCT</span>
@@ -282,158 +365,203 @@ export default function ProductInfo({ isAdmin, selectedFacility }: { isAdmin: bo
         )}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between surface-card p-2">
-        <div className="flex flex-wrap items-center gap-2 flex-1 w-full lg:w-auto pb-2 lg:pb-0">
-          <div className="flex items-center gap-1.5 px-2">
-            <Filter className="h-3.5 w-3.5 text-zinc-400" />
-            <button
-              onClick={() => {
-                setFilterDevices([]);
-                setFilterProjectNames([]);
-                setFilterNicknames([]);
-                setFilterChangeKitGroups([]);
-                setFilterLBGroups([]);
-              }}
-              className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors whitespace-nowrap"
-            >
-              Clear
-            </button>
+      {viewMode === 'inventory' ? (
+        <>
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between surface-card p-2">
+            <div className="flex flex-wrap items-center gap-2 flex-1 w-full lg:w-auto pb-2 lg:pb-0">
+              <div className="flex items-center gap-1.5 px-2">
+                <Filter className="h-3.5 w-3.5 text-zinc-400" />
+                <button
+                  onClick={() => {
+                    setFilterDevices([]);
+                    setFilterProjectNames([]);
+                    setFilterNicknames([]);
+                    setFilterChangeKitGroups([]);
+                    setFilterLBGroups([]);
+                  }}
+                  className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors whitespace-nowrap"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="w-px h-4 bg-zinc-200 shrink-0"></div>
+              <div className="flex flex-wrap items-center gap-2 px-1">
+                <MultiSelectDropdown
+                  values={filterDevices}
+                  onChange={setFilterDevices}
+                  options={uniqueDevices}
+                  placeholder="Devices"
+                />
+                <MultiSelectDropdown
+                  values={filterProjectNames}
+                  onChange={setFilterProjectNames}
+                  options={uniqueProjectNames}
+                  placeholder="Projects"
+                />
+                <MultiSelectDropdown
+                  values={filterNicknames}
+                  onChange={setFilterNicknames}
+                  options={uniqueNicknames}
+                  placeholder="Nicknames"
+                />
+                <MultiSelectDropdown
+                  values={filterChangeKitGroups}
+                  onChange={setFilterChangeKitGroups}
+                  options={uniqueChangeKitGroups}
+                  placeholder="Kit Groups"
+                />
+                <MultiSelectDropdown
+                  values={filterLBGroups}
+                  onChange={setFilterLBGroups}
+                  options={uniqueLBGroups}
+                  placeholder="LB Groups"
+                />
+                <div className="w-px h-4 bg-zinc-200 shrink-0 mx-1"></div>
+                <MultiSelectDropdown
+                  values={allColumns.filter(c => visibleColumns.includes(c.key)).map(c => c.label)}
+                  onChange={(labels) => {
+                    const keys = allColumns.filter(c => labels.includes(c.label)).map(c => c.key);
+                    setVisibleColumns(keys);
+                  }}
+                  options={allColumns.map(c => c.label)}
+                  placeholder="Columns"
+                />
+              </div>
+            </div>
+            
+            <div className="relative w-full lg:w-72 shrink-0">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-xl border border-zinc-100 bg-zinc-50/50 pl-10 pr-4 py-2 text-sm focus:border-brand-primary focus:bg-white focus:outline-none transition-all"
+              />
+            </div>
           </div>
-          <div className="w-px h-4 bg-zinc-200 shrink-0"></div>
-          <div className="flex flex-wrap items-center gap-2 px-1">
-            <MultiSelectDropdown
-              values={filterDevices}
-              onChange={setFilterDevices}
-              options={uniqueDevices}
-              placeholder="Devices"
-            />
-            <MultiSelectDropdown
-              values={filterProjectNames}
-              onChange={setFilterProjectNames}
-              options={uniqueProjectNames}
-              placeholder="Projects"
-            />
-            <MultiSelectDropdown
-              values={filterNicknames}
-              onChange={setFilterNicknames}
-              options={uniqueNicknames}
-              placeholder="Nicknames"
-            />
-            <MultiSelectDropdown
-              values={filterChangeKitGroups}
-              onChange={setFilterChangeKitGroups}
-              options={uniqueChangeKitGroups}
-              placeholder="Kit Groups"
-            />
-            <MultiSelectDropdown
-              values={filterLBGroups}
-              onChange={setFilterLBGroups}
-              options={uniqueLBGroups}
-              placeholder="LB Groups"
-            />
-            <div className="w-px h-4 bg-zinc-200 shrink-0 mx-1"></div>
-            <MultiSelectDropdown
-              values={allColumns.filter(c => visibleColumns.includes(c.key)).map(c => c.label)}
-              onChange={(labels) => {
-                const keys = allColumns.filter(c => labels.includes(c.label)).map(c => c.key);
-                setVisibleColumns(keys);
-              }}
-              options={allColumns.map(c => c.label)}
-              placeholder="Columns"
-            />
-          </div>
-        </div>
-        
-        <div className="relative w-full lg:w-72 shrink-0">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-xl border border-zinc-100 bg-zinc-50/50 pl-10 pr-4 py-2 text-sm focus:border-brand-primary focus:bg-white focus:outline-none transition-all"
-          />
-        </div>
-      </div>
 
-      <div className="relative overflow-hidden surface-card">
-        <DoubleScrollbar>
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="bg-zinc-50/50">
-                {columns.map((col, i) => (
-                  <th key={col.key} className={cn("px-6 py-4 border-b border-zinc-100", i === 0 && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">
-                      {col.label}
-                    </span>
-                  </th>
-                ))}
-                {isAdmin && <th className="px-6 py-4 border-b border-zinc-100 text-right">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">Actions</span>
-                </th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-50">
-              <AnimatePresence mode="popLayout">
-                {editingId === 'new' && (
-                  <motion.tr 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="bg-zinc-50/30"
-                  >
-                    {columns.map(col => (
-                      <td key={col.key} className="px-6 py-3">
-                        <input
-                          type="text"
-                          autoFocus={col.key === 'facility'}
-                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all"
-                          onChange={(e) => setNewProduct({ ...newProduct, [col.key]: e.target.value })}
-                        />
-                      </td>
+          <div className="relative overflow-hidden surface-card">
+            <DoubleScrollbar>
+              <table className="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr className="bg-zinc-50/50">
+                    {columns.map((col, i) => (
+                      <th key={col.key} className={cn("px-6 py-4 border-b border-zinc-100", i === 0 && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">
+                          {col.label}
+                        </span>
+                      </th>
                     ))}
-                    <td className="px-6 py-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={handleAdd} className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"><Check className="h-4 w-4" /></button>
-                        <button onClick={() => setEditingId(null)} className="p-2 rounded-lg bg-zinc-100 text-zinc-400 hover:bg-zinc-200 transition-colors"><X className="h-4 w-4" /></button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                )}
-                {filteredProducts.slice(0, displayCount).map((product, idx) => (
-                  <ProductRow
-                    key={product.id}
-                    product={product}
-                    idx={idx}
-                    columns={columns}
-                    isAdmin={isAdmin}
-                    editingId={editingId}
-                    setEditingId={setEditingId}
-                    handleUpdate={handleUpdate}
-                    setModal={setModal}
-                    setSelectedDevice={setSelectedDevice}
-                    setSaveModal={setSaveModal}
-                  />
-                ))}
-              </AnimatePresence>
-              {filteredProducts.length > displayCount && (
-                <tr>
-                  <td colSpan={columns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
-                    Showing {displayCount} of {filteredProducts.length} products. Use filters to narrow down results, or <button onClick={() => setDisplayCount(prev => prev + 200)} className="text-brand-primary hover:underline font-medium not-italic">load 200 more</button>.
-                  </td>
-                </tr>
-              )}
-              {displayCount > 100 && filteredProducts.length <= displayCount && (
-                <tr>
-                  <td colSpan={columns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
-                    Showing all {filteredProducts.length} products. <button onClick={() => setDisplayCount(100)} className="text-brand-primary hover:underline font-medium not-italic">Show less</button>.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </DoubleScrollbar>
-      </div>
+                    {isAdmin && <th className="px-6 py-4 border-b border-zinc-100 text-right">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">Actions</span>
+                    </th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-50">
+                  <AnimatePresence mode="popLayout">
+                    {editingId === 'new' && (
+                      <motion.tr 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="bg-zinc-50/30"
+                      >
+                        {columns.map(col => (
+                          <td key={col.key} className="px-6 py-3">
+                            <input
+                              type="text"
+                              autoFocus={col.key === 'facility'}
+                              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all"
+                              onChange={(e) => setNewProduct({ ...newProduct, [col.key]: e.target.value })}
+                            />
+                          </td>
+                        ))}
+                        <td className="px-6 py-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={handleAdd} className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"><Check className="h-4 w-4" /></button>
+                            <button onClick={() => setEditingId(null)} className="p-2 rounded-lg bg-zinc-100 text-zinc-400 hover:bg-zinc-200 transition-colors"><X className="h-4 w-4" /></button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    )}
+                    {filteredProducts.slice(0, displayCount).map((product, idx) => (
+                      <ProductRow
+                        key={product.id}
+                        product={product}
+                        idx={idx}
+                        columns={columns}
+                        isAdmin={isAdmin}
+                        editingId={editingId}
+                        setEditingId={setEditingId}
+                        handleUpdate={handleUpdate}
+                        setModal={setModal}
+                        setSelectedDevice={setSelectedDevice}
+                        setSaveModal={setSaveModal}
+                      />
+                    ))}
+                  </AnimatePresence>
+                  {filteredProducts.length > displayCount && (
+                    <tr>
+                      <td colSpan={columns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
+                        Showing {displayCount} of {filteredProducts.length} products. Use filters to narrow down results, or <button onClick={() => setDisplayCount(prev => prev + 200)} className="text-brand-primary hover:underline font-medium not-italic">load 200 more</button>.
+                      </td>
+                    </tr>
+                  )}
+                  {displayCount > 100 && filteredProducts.length <= displayCount && (
+                    <tr>
+                      <td colSpan={columns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
+                        Showing all {filteredProducts.length} products. <button onClick={() => setDisplayCount(100)} className="text-brand-primary hover:underline font-medium not-italic">Show less</button>.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </DoubleScrollbar>
+          </div>
+        </>
+      ) : (
+        <div className="surface-card p-6">
+          <div className="mb-6 space-y-1">
+            <h3 className="text-xl font-bold text-zinc-900">Missing Life Time Records</h3>
+            <p className="text-sm text-zinc-500">The following Product Info entries have a Socket Name that is missing from the Life Time data.</p>
+          </div>
+          {missingLifeTimeData.length === 0 ? (
+            <div className="py-12 text-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50">
+              <Check className="mx-auto h-8 w-8 text-emerald-500 mb-3" />
+              <div className="text-sm font-medium text-zinc-900">All Good!</div>
+              <div className="text-xs text-zinc-500 mt-1">No missing life time records found.</div>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-zinc-200">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="bg-zinc-50/80 border-b border-zinc-200">
+                    <th className="px-6 py-3 font-bold text-xs uppercase tracking-wider text-zinc-500">Facility</th>
+                    <th className="px-6 py-3 font-bold text-xs uppercase tracking-wider text-zinc-500">Device</th>
+                    <th className="px-6 py-3 font-bold text-xs uppercase tracking-wider text-zinc-500">Insertion</th>
+                    <th className="px-6 py-3 font-bold text-xs uppercase tracking-wider text-zinc-500">Socket Name</th>
+                    <th className="px-6 py-3 font-bold text-xs uppercase tracking-wider text-zinc-500">Type</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {missingLifeTimeData.map((item, idx) => (
+                    <tr key={item.id} className={cn("hover:bg-zinc-50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-zinc-50/30")}>
+                      <td className="px-6 py-3 text-zinc-900">{item.facility}</td>
+                      <td className="px-6 py-3 font-bold text-brand-primary">
+                        <button onClick={() => setSelectedDevice(item.device)} className="hover:underline">{item.device}</button>
+                      </td>
+                      <td className="px-6 py-3 text-zinc-600">{item.insertion}</td>
+                      <td className="px-6 py-3 text-rose-600 font-medium">{item.socketName}</td>
+                      <td className="px-6 py-3 text-zinc-500 text-xs">{item.socketType}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
