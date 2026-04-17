@@ -22,7 +22,8 @@ import {
   Calculator,
   Menu,
   X,
-  Loader2
+  Loader2,
+  ArrowLeft
 } from 'lucide-react';
 
 const ProductInfo = lazy(() => import('./ProductInfo'));
@@ -48,10 +49,16 @@ type Tab = 'product' | 'socket' | 'change-kit' | 'pogo-pin' | 'life-time' | 'loa
 
 export default function Dashboard({ user, role, selectedFacility, onBackToFacility }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('product');
+  const [tabHistory, setTabHistory] = useState<Tab[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isAdmin = role === 'admin';
+
+  const handleNavigate = (tab: Tab) => {
+    setTabHistory(prev => [...prev, activeTab]);
+    setActiveTab(tab);
+  };
 
   const menuItems = [
     { id: 'product', label: 'Product Info', icon: Box },
@@ -127,6 +134,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
               key={item.id}
               onClick={() => {
                 setActiveTab(item.id as Tab);
+                setTabHistory([]);
                 setIsMobileMenuOpen(false);
               }}
               className={cn(
@@ -197,7 +205,23 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
             </button>
             <div className="h-6 w-px bg-zinc-200 hidden md:block" />
             <div className="flex flex-col">
-              <h1 className="font-serif text-xl md:text-2xl italic tracking-tight text-zinc-900 truncate max-w-[120px] md:max-w-none">
+              <h1 className="flex items-center gap-2 font-serif text-xl md:text-2xl italic tracking-tight text-zinc-900 truncate max-w-[120px] md:max-w-none">
+                {tabHistory.length > 0 && (
+                  <button 
+                    onClick={() => {
+                      const newHistory = [...tabHistory];
+                      const prevTab = newHistory.pop();
+                      if (prevTab) {
+                        setActiveTab(prevTab);
+                        setTabHistory(newHistory);
+                      }
+                    }}
+                    className="flex items-center justify-center p-1 hover:bg-zinc-100 rounded-lg transition-colors text-zinc-500 hover:text-zinc-900"
+                    title="Go Back"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </button>
+                )}
                 {menuItems.find(i => i.id === activeTab)?.label}
               </h1>
             </div>
@@ -242,13 +266,13 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
                   <Loader2 className="h-8 w-8 animate-spin text-zinc-300" />
                 </div>
               }>
-                {activeTab === 'product' && <ProductInfo isAdmin={isAdmin} selectedFacility={selectedFacility} onNavigate={(tab) => setActiveTab(tab as Tab)} />}
+                {activeTab === 'product' && <ProductInfo isAdmin={isAdmin} selectedFacility={selectedFacility} onNavigate={(tab) => handleNavigate(tab as Tab)} />}
                 {activeTab === 'socket' && <SocketInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
                 {activeTab === 'change-kit' && <ChangeKitInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
                 {activeTab === 'pogo-pin' && <PogoPinInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
                 {activeTab === 'life-time' && <LifeTimeInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
                 {activeTab === 'load-board' && <LoadBoardInfo isAdmin={isAdmin} selectedFacility={selectedFacility} />}
-                {activeTab === 'required-pogo-pin' && <RequiredPogoPin selectedFacility={selectedFacility} />}
+                {activeTab === 'required-pogo-pin' && <RequiredPogoPin selectedFacility={selectedFacility} isAdmin={isAdmin} />}
                 {activeTab === 'data-management' && <DataManagement />}
                 {activeTab === 'settings' && <SettingsTab />}
                 {activeTab === 'users' && <UserManagement />}

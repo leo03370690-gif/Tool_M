@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { Plus, Trash2, Edit2, Search, Check, X, Filter } from 'lucide-react';
+import { Plus, Trash2, Edit2, Search, Check, X, Filter, ArrowUpDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
@@ -136,6 +136,15 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
     'facility', 'socketGroup', 'pogoPin1Pn', 'pogoPinQty', 'lifeTime', 'loadBoardGroup', 'remark'
   ]);
   const [displayCount, setDisplayCount] = useState(100);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
 
   const handleAdd = async () => {
     if (!newRecord.socketGroup) return;
@@ -184,7 +193,7 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
   const uniqueLoadBoardGroups = React.useMemo(() => getUniqueValues('loadBoardGroup', currentFilters), [records, filterSocketGroups, filterPogoPin1Pns]);
 
   const filteredRecords = React.useMemo(() => {
-    return records.filter(r => {
+    let result = records.filter(r => {
       const matchSearch = (r.socketGroup || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
         (r.pogoPin1Pn || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       
@@ -194,7 +203,19 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
 
       return matchSearch && matchSocketGroup && matchPogoPin1Pn && matchLoadBoardGroup;
     });
-  }, [records, debouncedSearchTerm, filterSocketGroups, filterPogoPin1Pns, filterLoadBoardGroups]);
+
+    if (sortConfig) {
+      result.sort((a, b) => {
+        const aValue = String(a[sortConfig.key as keyof LifeTime] || '');
+        const bValue = String(b[sortConfig.key as keyof LifeTime] || '');
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [records, debouncedSearchTerm, filterSocketGroups, filterPogoPin1Pns, filterLoadBoardGroups, sortConfig]);
 
   const allColumns = [
     { key: 'facility', label: 'Facility' },
@@ -296,10 +317,16 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
             <thead>
               <tr className="bg-zinc-50/50">
                 {columns.map((col, i) => (
-                  <th key={col.key} className={cn("px-6 py-4 border-b border-zinc-100", i === 0 && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">
-                      {col.label}
-                    </span>
+                  <th 
+                    key={col.key} 
+                    className={cn("border-b border-zinc-100", i === 0 && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}
+                  >
+                    <div className="resize-x overflow-hidden px-6 py-4 min-w-[80px] max-w-[800px] flex items-center cursor-pointer hover:bg-zinc-100 transition-colors" onClick={() => handleSort(col.key)}>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans whitespace-nowrap">
+                        {col.label}
+                      </span>
+                      <ArrowUpDown className={cn("ml-2 h-3 w-3 shrink-0", sortConfig?.key === col.key ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                    </div>
                   </th>
                 ))}
                 {isAdmin && <th className="px-6 py-4 border-b border-zinc-100 text-right">

@@ -21,7 +21,7 @@ interface RowData {
   facility?: string;
 }
 
-export default function RequiredPogoPin({ selectedFacility }: { selectedFacility: string }) {
+export default function RequiredPogoPin({ selectedFacility, isAdmin }: { selectedFacility: string; isAdmin?: boolean }) {
   const { products: allProducts, lifeTimes: allLifeTimes, pogoPins: allPogoPinsData, requiredPogoPinRows: allRows } = useData();
 
   const products = useMemo(() => {
@@ -675,40 +675,42 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
           animate={{ opacity: 1, y: 0 }}
           className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden"
         >
-          <div className="p-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-            <div className="flex gap-3">
-              <button
-                onClick={handleAddRow}
-                className="flex items-center gap-2 rounded-xl bg-brand-primary px-4 py-2 text-sm font-bold text-white transition-all hover:bg-brand-primary/90 hover:shadow-md"
-              >
-                <Plus className="h-4 w-4" />
-                Add Row
-              </button>
-              <label className="flex items-center gap-2 rounded-xl bg-white border border-zinc-200 px-4 py-2 text-sm font-bold text-zinc-700 transition-all hover:bg-zinc-50 cursor-pointer shadow-sm">
-                <Upload className="h-4 w-4" />
-                Import Excel
-                <input
-                  type="file"
-                  accept=".xlsx, .xls"
-                  className="hidden"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                />
-              </label>
-              {rows.length > 0 && (
+          {isAdmin && (
+            <div className="p-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+              <div className="flex gap-3">
                 <button
-                  onClick={() => setIsClearModalOpen(true)}
-                  className="flex items-center gap-2 rounded-xl bg-white border border-red-200 px-4 py-2 text-sm font-bold text-red-600 transition-all hover:bg-red-50 cursor-pointer shadow-sm"
+                  onClick={handleAddRow}
+                  className="flex items-center gap-2 rounded-xl bg-brand-primary px-4 py-2 text-sm font-bold text-white transition-all hover:bg-brand-primary/90 hover:shadow-md"
                 >
-                  <Eraser className="h-4 w-4" />
-                  Clear All
+                  <Plus className="h-4 w-4" />
+                  Add Row
                 </button>
-              )}
+                <label className="flex items-center gap-2 rounded-xl bg-white border border-zinc-200 px-4 py-2 text-sm font-bold text-zinc-700 transition-all hover:bg-zinc-50 cursor-pointer shadow-sm">
+                  <Upload className="h-4 w-4" />
+                  Import Excel
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                  />
+                </label>
+                {rows.length > 0 && (
+                  <button
+                    onClick={() => setIsClearModalOpen(true)}
+                    className="flex items-center gap-2 rounded-xl bg-white border border-red-200 px-4 py-2 text-sm font-bold text-red-600 transition-all hover:bg-red-50 cursor-pointer shadow-sm"
+                  >
+                    <Eraser className="h-4 w-4" />
+                    Clear All
+                  </button>
+                )}
+              </div>
+              <div className="text-xs text-zinc-400">
+                Excel format: Col A = PartNo, Col B = Qty (starting from row 2)
+              </div>
             </div>
-            <div className="text-xs text-zinc-400">
-              Excel format: Col A = PartNo, Col B = Qty (starting from row 2)
-            </div>
-          </div>
+          )}
           
           <DoubleScrollbar>
             <table className="w-full text-left text-sm text-zinc-600">
@@ -721,36 +723,44 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
                   <th className="px-4 py-3 font-medium">Pogo pin2 need</th>
                   <th className="px-4 py-3 font-medium">Pogo pin3 need</th>
                   <th className="px-4 py-3 font-medium">Pogo pin4 need</th>
-                  <th className="px-4 py-3 font-medium w-16"></th>
+                  {isAdmin && <th className="px-4 py-3 font-medium w-16"></th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-zinc-500">
-                      No data. Add a row or import an Excel file.
+                    <td colSpan={isAdmin ? 8 : 7} className="px-4 py-8 text-center text-zinc-500">
+                      No data. {isAdmin && "Add a row or import an Excel file."}
                     </td>
                   </tr>
                 ) : (
                   rows.map((row) => (
                     <tr key={row.id} className="hover:bg-zinc-50/50 transition-colors group">
                       <td className="px-4 py-2 sticky left-0 bg-white group-hover:bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors">
-                        <input
-                          type="text"
-                          value={row.partNo}
-                          onChange={(e) => handleRowChange(row.id, 'partNo', e.target.value)}
-                          className="w-full rounded-md border border-zinc-200 px-3 py-1.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary bg-white"
-                          placeholder="Enter PartNo"
-                        />
+                        {isAdmin ? (
+                          <input
+                            type="text"
+                            value={row.partNo}
+                            onChange={(e) => handleRowChange(row.id, 'partNo', e.target.value)}
+                            className="w-full rounded-md border border-zinc-200 px-3 py-1.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary bg-white"
+                            placeholder="Enter PartNo"
+                          />
+                        ) : (
+                          <span className="font-medium text-zinc-900">{row.partNo}</span>
+                        )}
                       </td>
                       <td className="px-4 py-2">
-                        <input
-                          type="number"
-                          value={row.qty}
-                          onChange={(e) => handleRowChange(row.id, 'qty', e.target.value ? Number(e.target.value) : '')}
-                          className="w-full rounded-md border border-zinc-200 px-3 py-1.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary bg-white"
-                          placeholder="Qty"
-                        />
+                        {isAdmin ? (
+                          <input
+                            type="number"
+                            value={row.qty}
+                            onChange={(e) => handleRowChange(row.id, 'qty', e.target.value ? Number(e.target.value) : '')}
+                            className="w-full rounded-md border border-zinc-200 px-3 py-1.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary bg-white"
+                            placeholder="Qty"
+                          />
+                        ) : (
+                          <span className="font-medium text-zinc-900">{row.qty}</span>
+                        )}
                       </td>
                       <td className="px-4 py-2">
                         <span className={cn("text-xs", row.remark ? "text-red-500 font-medium" : "text-zinc-400")}>
@@ -770,14 +780,16 @@ export default function RequiredPogoPin({ selectedFacility }: { selectedFacility
                           </td>
                         );
                       })}
-                      <td className="px-4 py-2 text-right">
-                        <button
-                          onClick={() => handleDeleteRow(row.id)}
-                          className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
+                      {isAdmin && (
+                        <td className="px-4 py-2 text-right">
+                          <button
+                            onClick={() => handleDeleteRow(row.id)}
+                            className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}

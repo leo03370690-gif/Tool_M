@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { Plus, Trash2, Edit2, Search, BarChart2, List, Check, X, Filter } from 'lucide-react';
+import { Plus, Trash2, Edit2, Search, BarChart2, List, Check, X, Filter, ArrowUpDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
@@ -137,6 +137,15 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
     'facility', 'location', 'kind', 'toolsId', 'packageSize', 'changeKitGroup', 'status', 'idleTime'
   ]);
   const [displayCount, setDisplayCount] = useState(100);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
 
   const handleAdd = async () => {
     if (!newKit.toolsId) return;
@@ -204,7 +213,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
   }, [kits]);
 
   const filteredKits = React.useMemo(() => {
-    return kits.filter(k => {
+    let result = kits.filter(k => {
       const matchSearch = (k.toolsId || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
         (k.kind || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       
@@ -214,7 +223,19 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
 
       return matchSearch && matchToolsId && matchChangeKitGroup && matchStatus;
     });
-  }, [kits, debouncedSearchTerm, filterToolsIds, filterChangeKitGroups, filterStatuses]);
+
+    if (sortConfig) {
+      result.sort((a, b) => {
+        const aValue = String(a[sortConfig.key as keyof ChangeKit] || '');
+        const bValue = String(b[sortConfig.key as keyof ChangeKit] || '');
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [kits, debouncedSearchTerm, filterToolsIds, filterChangeKitGroups, filterStatuses, sortConfig]);
 
   const allColumns = [
     { key: 'facility', label: 'Facility' },
@@ -345,10 +366,16 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                 <thead>
                   <tr className="bg-zinc-50/50">
                     {columns.map((col, i) => (
-                      <th key={col.key} className={cn("px-6 py-4 border-b border-zinc-100", i === 0 && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}>
-                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">
-                          {col.label}
-                        </span>
+                      <th 
+                        key={col.key} 
+                        className={cn("border-b border-zinc-100", i === 0 && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}
+                      >
+                        <div className="resize-x overflow-hidden px-6 py-4 min-w-[80px] max-w-[800px] flex items-center cursor-pointer hover:bg-zinc-100 transition-colors" onClick={() => handleSort(col.key)}>
+                          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans whitespace-nowrap">
+                            {col.label}
+                          </span>
+                          <ArrowUpDown className={cn("ml-2 h-3 w-3 shrink-0", sortConfig?.key === col.key ? "text-brand-primary opacity-100" : "text-zinc-400 opacity-50")} />
+                        </div>
                       </th>
                     ))}
                     {isAdmin && <th className="px-6 py-4 border-b border-zinc-100 text-right">
