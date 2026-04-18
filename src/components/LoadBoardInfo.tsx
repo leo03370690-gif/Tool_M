@@ -329,10 +329,10 @@ export default function LoadBoardInfo({
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between surface-card p-4">
-        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 px-1 text-zinc-400">
-            <Filter className="h-3.5 w-3.5" />
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between surface-card p-2">
+        <div className="flex flex-wrap items-center gap-2 flex-1 w-full lg:w-auto pb-2 lg:pb-0">
+          <div className="flex items-center gap-1.5 px-2">
+            <Filter className="h-3.5 w-3.5 text-zinc-400" />
             <button
               onClick={() => {
                 setFilterProjectNames([]);
@@ -340,15 +340,13 @@ export default function LoadBoardInfo({
                 setFilterLBGroups([]);
                 setFilterLocations([]);
               }}
-              className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors"
+              className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors whitespace-nowrap"
             >
               Clear
             </button>
           </div>
-          
-          <div className="hidden sm:block w-px h-4 bg-zinc-200 shrink-0"></div>
-          
-          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+          <div className="w-px h-4 bg-zinc-200 shrink-0"></div>
+          <div className="flex flex-wrap items-center gap-2 px-1">
             <MultiSelectDropdown
               values={filterProjectNames}
               onChange={setFilterProjectNames}
@@ -373,9 +371,7 @@ export default function LoadBoardInfo({
               options={uniqueLocations}
               placeholder="Locations"
             />
-            
-            <div className="hidden sm:block w-px h-4 bg-zinc-200 shrink-0 mx-1"></div>
-            
+            <div className="w-px h-4 bg-zinc-200 shrink-0 mx-1"></div>
             <MultiSelectDropdown
               values={allColumns.filter(c => visibleColumns.includes(c.key)).map(c => c.label)}
               onChange={(labels) => {
@@ -384,7 +380,6 @@ export default function LoadBoardInfo({
               }}
               options={allColumns.map(c => c.label)}
               placeholder="Columns"
-              align="right"
             />
           </div>
         </div>
