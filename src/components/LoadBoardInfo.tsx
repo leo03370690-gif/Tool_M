@@ -120,11 +120,13 @@ const LoadBoardRow = React.memo(({
 export default function LoadBoardInfo({ 
   isAdmin, 
   selectedFacility,
-  onAddMaintenanceRecord
+  onAddMaintenanceRecord,
+  onViewHistory
 }: { 
   isAdmin: boolean, 
   selectedFacility: string,
-  onAddMaintenanceRecord: (data: any) => void
+  onAddMaintenanceRecord: (data: any) => void,
+  onViewHistory?: (lbNo: string) => void
 }) {
   const { loadBoards: allLoadBoards, loading } = useData();
   
@@ -601,18 +603,31 @@ export default function LoadBoardInfo({
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-brand-primary">
                   <BarChart2 className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900">Maintenance Record</h3>
+                <h3 className="text-xl font-bold text-zinc-900">Load Board Options</h3>
               </div>
               <p className="mb-8 text-sm leading-relaxed text-zinc-600">
-                Would you like to add a new maintenance record for <span className="font-bold text-brand-primary">{maintenanceModal.lb?.lbName}</span>?
+                What would you like to do for <span className="font-bold text-brand-primary">{maintenanceModal.lb?.lbName}</span>?
               </p>
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-col sm:flex-row justify-end gap-3">
                 <button
                   onClick={() => setMaintenanceModal({ isOpen: false, lb: null })}
-                  className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100"
+                  className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100 sm:mr-auto"
                 >
-                  No, Cancel
+                  Cancel
                 </button>
+                {onViewHistory && (
+                  <button
+                    onClick={() => {
+                      if (maintenanceModal.lb) {
+                         onViewHistory(maintenanceModal.lb.lbName);
+                      }
+                      setMaintenanceModal({ isOpen: false, lb: null });
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-zinc-100 text-zinc-700 px-6 py-2.5 text-sm font-bold transition-all hover:bg-zinc-200"
+                  >
+                    View History
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     if (maintenanceModal.lb) {
@@ -624,9 +639,9 @@ export default function LoadBoardInfo({
                     }
                     setMaintenanceModal({ isOpen: false, lb: null });
                   }}
-                  className="flex items-center gap-2 rounded-xl bg-zinc-900 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-zinc-800 shadow-lg shadow-black/10"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-zinc-800 shadow-lg shadow-black/10"
                 >
-                  Yes, Add Record
+                  Add Record
                 </button>
               </div>
             </motion.div>

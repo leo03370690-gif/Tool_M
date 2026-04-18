@@ -38,7 +38,8 @@ const MaintenanceRow = React.memo(({
   editingId, 
   setEditingId, 
   handleUpdate, 
-  setDeleteModal
+  setDeleteModal,
+  onLBClick
 }: { 
   record: MaintenanceRecord, 
   idx: number, 
@@ -47,7 +48,8 @@ const MaintenanceRow = React.memo(({
   editingId: string | null, 
   setEditingId: (id: string | null) => void, 
   handleUpdate: (id: string, data: any) => void, 
-  setDeleteModal: (modal: any) => void
+  setDeleteModal: (modal: any) => void,
+  onLBClick?: (lbNo: string) => void
 }) => {
   const [localData, setLocalData] = useState<Partial<MaintenanceRecord>>(record);
   
@@ -96,17 +98,26 @@ const MaintenanceRow = React.memo(({
               />
             )
           ) : (
-            <span className={cn(
-              "text-zinc-600",
-              col.key === 'status' && {
-                'text-emerald-600 font-bold': record.status === 'Done',
-                'text-amber-600 font-bold': record.status === 'On-going',
-                'text-blue-600 font-bold': record.status === 'Returned',
-                'text-zinc-400 font-bold': record.status === 'Pending'
-              }
-            )}>
-              {record[col.key as keyof MaintenanceRecord]}
-            </span>
+            col.key === 'lbNo' && onLBClick ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); onLBClick(record.lbNo); }}
+                className="text-brand-primary font-bold hover:underline decoration-2 underline-offset-2 transition-all cursor-pointer text-left"
+              >
+                {record[col.key as keyof MaintenanceRecord]}
+              </button>
+            ) : (
+              <span className={cn(
+                "text-zinc-600",
+                col.key === 'status' && {
+                  'text-emerald-600 font-bold': record.status === 'Done',
+                  'text-amber-600 font-bold': record.status === 'On-going',
+                  'text-blue-600 font-bold': record.status === 'Returned',
+                  'text-zinc-400 font-bold': record.status === 'Pending'
+                }
+              )}>
+                {record[col.key as keyof MaintenanceRecord]}
+              </span>
+            )
           )}
         </td>
       ))}
@@ -152,11 +163,13 @@ const MaintenanceRow = React.memo(({
 export default function MaintenanceHistory({ 
   isAdmin,
   selectedFacility,
-  onAddMaintenanceRecord
+  onAddMaintenanceRecord,
+  onLBClick
 }: { 
   isAdmin: boolean,
   selectedFacility: string,
-  onAddMaintenanceRecord: () => void
+  onAddMaintenanceRecord: () => void,
+  onLBClick?: (lbNo: string) => void
 }) {
   const [allRecords, setAllRecords] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -412,6 +425,7 @@ export default function MaintenanceHistory({
                   setEditingId={setEditingId}
                   handleUpdate={handleUpdate}
                   setDeleteModal={setDeleteModal}
+                  onLBClick={onLBClick}
                 />
               ))}
               {filteredRecords.length === 0 && (

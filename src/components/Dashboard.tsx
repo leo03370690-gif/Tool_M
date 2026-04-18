@@ -40,6 +40,7 @@ const AuditLogs = lazy(() => import('./AuditLogs'));
 const RequiredPogoPin = lazy(() => import('./RequiredPogoPin'));
 const MaintenanceRecord = lazy(() => import('./MaintenanceRecord'));
 const MaintenanceHistory = lazy(() => import('./MaintenanceHistory'));
+const LoadBoardHistory = lazy(() => import('./LoadBoardHistory'));
 
 interface DashboardProps {
   user: FirebaseUser;
@@ -48,12 +49,13 @@ interface DashboardProps {
   onBackToFacility: () => void;
 }
 
-type Tab = 'product' | 'socket' | 'change-kit' | 'pogo-pin' | 'life-time' | 'load-board' | 'required-pogo-pin' | 'users' | 'settings' | 'data-management' | 'audit-logs' | 'maintenance-history' | 'maintenance-record';
+type Tab = 'product' | 'socket' | 'change-kit' | 'pogo-pin' | 'life-time' | 'load-board' | 'required-pogo-pin' | 'users' | 'settings' | 'data-management' | 'audit-logs' | 'maintenance-history' | 'maintenance-record' | 'lb-history';
 
 export default function Dashboard({ user, role, selectedFacility, onBackToFacility }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('product');
   const [tabHistory, setTabHistory] = useState<Tab[]>([]);
   const [maintenanceInitialData, setMaintenanceInitialData] = useState<any>(null);
+  const [selectedLBNo, setSelectedLBNo] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -284,6 +286,10 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
                       setMaintenanceInitialData(data);
                       handleNavigate('maintenance-record');
                     }}
+                    onViewHistory={(lbNo) => {
+                      setSelectedLBNo(lbNo);
+                      handleNavigate('lb-history');
+                    }}
                   />
                 )}
                 {activeTab === 'required-pogo-pin' && <RequiredPogoPin selectedFacility={selectedFacility} isAdmin={isAdmin} />}
@@ -295,7 +301,26 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
                       setMaintenanceInitialData(null);
                       handleNavigate('maintenance-record');
                     }}
+                    onLBClick={(lbNo) => {
+                      setSelectedLBNo(lbNo);
+                      handleNavigate('lb-history');
+                    }}
                   />
+                )}
+                {activeTab === 'lb-history' && selectedLBNo && (
+                   <LoadBoardHistory 
+                     lbNo={selectedLBNo}
+                     onBack={() => {
+                       const newHistory = [...tabHistory];
+                       const prevTab = newHistory.pop();
+                       if (prevTab) {
+                         setActiveTab(prevTab);
+                         setTabHistory(newHistory);
+                       } else {
+                         setActiveTab('maintenance-history');
+                       }
+                     }}
+                   />
                 )}
                 {activeTab === 'maintenance-record' && (
                   <MaintenanceRecord 
