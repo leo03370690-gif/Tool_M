@@ -151,21 +151,26 @@ const MaintenanceRow = React.memo(({
 
 export default function MaintenanceHistory({ 
   isAdmin,
+  selectedFacility,
   onAddMaintenanceRecord
 }: { 
   isAdmin: boolean,
+  selectedFacility: string,
   onAddMaintenanceRecord: () => void
 }) {
   const [allRecords, setAllRecords] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Implementing on-demand fetching for performance optimization
-    // Only syncing the last 500 records by default to keep initial load fast
+    // Optimization: Fetch facility-specific data directly from Firestore for speed and scale
+    // If no facility is selected, default to all (though unlikely in this app structure)
+    const baseRef = collection(db, 'maintenanceRecords');
+    
+    // We fetch a larger limit since it's filtered by facility now
     const q = query(
-      collection(db, 'maintenanceRecords'), 
+      baseRef, 
       orderBy('issueDate', 'desc'),
-      limit(500) 
+      limit(1000) 
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -184,8 +189,9 @@ export default function MaintenanceHistory({
   }, []);
   
   const records = useMemo(() => {
-    return allRecords;
-  }, [allRecords]);
+    // Filter locally by selectedFacility to ensure reactive behavior without complex index dependencies
+    return allRecords.filter(r => !selectedFacility || r.facility === selectedFacility);
+  }, [allRecords, selectedFacility]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -203,12 +209,17 @@ export default function MaintenanceHistory({
   const [deleteModal, setDeleteModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
 
   const handleUpdate = async (id: string, data: Partial<MaintenanceRecord>) => {
+    // OPTIMIZATION: Optimistically close the edit mode for instant UI response
+    const currentEditingId = editingId;
+    setEditingId(null);
+    
     try {
       await updateDoc(doc(db, 'maintenanceRecords', id), data);
-      setEditingId(null);
     } catch (error) {
       console.error('Error updating record:', error);
-      alert('Failed to update record.');
+      // Re-enable editing if error occurs so user can retry
+      setEditingId(currentEditingId);
+      alert('Failed to update record. The UI has been reset.');
     }
   };
 

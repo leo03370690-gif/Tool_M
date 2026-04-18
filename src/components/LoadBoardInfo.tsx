@@ -173,8 +173,16 @@ export default function LoadBoardInfo({
   };
 
   const handleUpdate = async (id: string, data: Partial<LoadBoard>) => {
-    await updateDoc(doc(db, 'loadBoards', id), data);
+    // Optimization: UI-first state reset for snappy user feedback
+    const currentEditingId = editingId;
     setEditingId(null);
+    try {
+      await updateDoc(doc(db, 'loadBoards', id), data);
+    } catch (error) {
+      console.error("Error updating Load Board:", error);
+      setEditingId(currentEditingId);
+      alert("Failed to update Load Board record.");
+    }
   };
 
   const handleDelete = async () => {

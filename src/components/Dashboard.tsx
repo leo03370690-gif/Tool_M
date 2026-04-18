@@ -290,6 +290,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
                 {activeTab === 'maintenance-history' && (
                   <MaintenanceHistory 
                     isAdmin={isAdmin} 
+                    selectedFacility={selectedFacility}
                     onAddMaintenanceRecord={() => {
                       setMaintenanceInitialData(null);
                       handleNavigate('maintenance-record');
