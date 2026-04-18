@@ -2,7 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-export function MultiSelectDropdown({ values, onChange, options, placeholder }: { values: string[], onChange: (vals: string[]) => void, options: string[], placeholder: string }) {
+export function MultiSelectDropdown({ 
+  values, 
+  onChange, 
+  options, 
+  placeholder,
+  align = 'left'
+}: { 
+  values: string[], 
+  onChange: (vals: string[]) => void, 
+  options: string[], 
+  placeholder: string,
+  align?: 'left' | 'right'
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -50,7 +62,10 @@ export function MultiSelectDropdown({ values, onChange, options, placeholder }: 
       </button>
       
       {isOpen && (
-        <div className="absolute z-50 w-64 mt-1 bg-white border border-zinc-200 rounded-md shadow-lg overflow-hidden flex flex-col text-sm">
+        <div className={cn(
+          "absolute z-50 w-64 mt-1 bg-white border border-zinc-200 rounded-md shadow-lg overflow-hidden flex flex-col text-sm max-w-[calc(100vw-2rem)]",
+          align === 'right' ? "right-0" : "left-0"
+        )}>
           <div className="p-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />

@@ -307,9 +307,9 @@ export default function MaintenanceHistory({
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between surface-card p-2">
-        <div className="flex flex-wrap items-center gap-2 flex-1">
-          <div className="flex items-center gap-1.5 px-2 text-zinc-400">
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between surface-card p-4">
+        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 px-1 text-zinc-400">
             <Filter className="h-3.5 w-3.5" />
             <button
               onClick={() => {
@@ -322,8 +322,10 @@ export default function MaintenanceHistory({
               Clear
             </button>
           </div>
-          <div className="w-px h-4 bg-zinc-200 shrink-0"></div>
-          <div className="flex flex-wrap items-center gap-2 px-1">
+          
+          <div className="hidden sm:block w-px h-4 bg-zinc-200 shrink-0"></div>
+          
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
             <MultiSelectDropdown
               values={filterLBNo}
               onChange={setFilterLBNo}
@@ -342,7 +344,9 @@ export default function MaintenanceHistory({
               options={uniqueSites}
               placeholder="Sites"
             />
-            <div className="w-px h-4 bg-zinc-200 shrink-0 mx-1"></div>
+            
+            <div className="hidden sm:block w-px h-4 bg-zinc-200 shrink-0 mx-1"></div>
+            
             <MultiSelectDropdown
               values={allColumns.filter(c => visibleColumns.includes(c.key)).map(c => c.label)}
               onChange={(labels) => {
@@ -351,6 +355,7 @@ export default function MaintenanceHistory({
               }}
               options={allColumns.map(c => c.label)}
               placeholder="Columns"
+              align="right"
             />
           </div>
         </div>
