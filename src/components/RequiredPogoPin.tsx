@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { Plus, Trash2, Upload, FileSpreadsheet, Calculator, List, Eraser, Table, Search, Filter, ChevronDown, ArrowUpDown, Check, ExternalLink, ChevronRight, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
@@ -11,6 +11,7 @@ import { usePersistentState } from '../lib/usePersistentState';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useData } from '../contexts/DataContext';
 import { useDebounce } from '../lib/useDebounce';
+import { useFacilityFilter } from '../lib/useFacilityFilter';
 
 interface RowData {
   id: string;
@@ -24,29 +25,9 @@ interface RowData {
 export default function RequiredPogoPin({ selectedFacility, isAdmin }: { selectedFacility: string; isAdmin?: boolean }) {
   const { products: allProducts, lifeTimes: allLifeTimes, pogoPins: allPogoPinsData, requiredPogoPinRows: allRows } = useData();
 
-  const products = useMemo(() => {
-    let data = [...allProducts];
-    if (selectedFacility !== 'ALL') {
-      data = data.filter(p => (p.facility || '').trim().toUpperCase() === selectedFacility);
-    }
-    return data;
-  }, [allProducts, selectedFacility]);
-
-  const lifeTimes = useMemo(() => {
-    let data = [...allLifeTimes];
-    if (selectedFacility !== 'ALL') {
-      data = data.filter(r => (r.facility || '').trim().toUpperCase() === selectedFacility);
-    }
-    return data;
-  }, [allLifeTimes, selectedFacility]);
-
-  const pogoPinsData = useMemo(() => {
-    let data = [...allPogoPinsData];
-    if (selectedFacility !== 'ALL') {
-      data = data.filter(p => (p.facility || '').trim().toUpperCase() === selectedFacility);
-    }
-    return data;
-  }, [allPogoPinsData, selectedFacility]);
+  const products = useFacilityFilter(allProducts, selectedFacility);
+  const lifeTimes = useFacilityFilter(allLifeTimes, selectedFacility);
+  const pogoPinsData = useFacilityFilter(allPogoPinsData, selectedFacility);
 
   const [rows, setRows] = useState<RowData[]>([]);
   const [activeTab, setActiveTab] = useState<'input' | 'summary' | 'detailed'>('input');
@@ -127,7 +108,7 @@ export default function RequiredPogoPin({ selectedFacility, isAdmin }: { selecte
     };
   };
 
-  const handleAddRow = async () => {
+  const handleAddRow = useCallback(async () => {
     try {
       await addDoc(collection(db, 'requiredPogoPinRows'), {
         partNo: '',
@@ -139,15 +120,15 @@ export default function RequiredPogoPin({ selectedFacility, isAdmin }: { selecte
     } catch (error) {
       console.error("Error adding document: ", error);
     }
-  };
+  }, [selectedFacility]);
 
-  const handleRowChange = async (id: string, field: keyof RowData, value: string | number) => {
+  const handleRowChange = useCallback(async (id: string, field: keyof RowData, value: string | number) => {
     const rowToUpdate = rows.find(r => r.id === id);
     if (!rowToUpdate) return;
-    
+
     const newRow = { ...rowToUpdate, [field]: value };
     const calculatedRow = calculateRow(newRow, products, lifeTimes);
-    
+
     try {
       const docRef = doc(db, 'requiredPogoPinRows', id);
       await updateDoc(docRef, {
@@ -158,17 +139,17 @@ export default function RequiredPogoPin({ selectedFacility, isAdmin }: { selecte
     } catch (error) {
       console.error("Error updating document: ", error);
     }
-  };
+  }, [rows, products, lifeTimes]);
 
-  const handleDeleteRow = async (id: string) => {
+  const handleDeleteRow = useCallback(async (id: string) => {
     try {
       await deleteDoc(doc(db, 'requiredPogoPinRows', id));
     } catch (error) {
       console.error("Error deleting document: ", error);
     }
-  };
+  }, []);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -218,7 +199,7 @@ export default function RequiredPogoPin({ selectedFacility, isAdmin }: { selecte
     };
     reader.readAsBinaryString(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+  }, [selectedFacility, products, lifeTimes]);
 
   const getSummary = () => {
     const summary: Record<string, { required: number; onHand: number; final: number }> = {};

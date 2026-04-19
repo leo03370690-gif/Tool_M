@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import OfflineBanner from './components/OfflineBanner';
 
 const ADMIN_EMAILS = ['leo03370690@gmail.com', 'leo.lo@tooling.local'];
 
@@ -98,6 +99,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-bg-canvas">
+        <OfflineBanner />
         <AnimatePresence>
           {quotaExceeded && (
             <motion.div

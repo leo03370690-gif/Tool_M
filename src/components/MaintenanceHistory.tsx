@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
 import { deleteDoc, doc, updateDoc, collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { Trash2, Edit2, Check, X, Search, List, Filter, ArrowUpDown, History, Loader2, Plus, Download } from 'lucide-react';
@@ -9,6 +9,7 @@ import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
 import { useDebounce } from '../lib/useDebounce';
+import { useFacilityFilter } from '../lib/useFacilityFilter';
 
 interface MaintenanceRecord {
   id: string;
@@ -173,14 +174,11 @@ export default function MaintenanceHistory({
 }) {
   const { maintenanceRecords: allRecords, loading } = useData();
   
-  const records = useMemo(() => {
-    // Filter locally by selectedFacility to ensure reactive behavior without complex index dependencies
-    // Using case-insensitive comparison to avoid issues with SIGURD vs Sigurd
-    const targetFacility = selectedFacility?.toLowerCase();
-    const facilityRecords = allRecords.filter(r => !targetFacility || r.facility?.toLowerCase() === targetFacility);
-    // Ensure they are sorted by default like the previous query
-    return facilityRecords.sort((a, b) => new Date(b.issueDate || '').getTime() - new Date(a.issueDate || '').getTime());
-  }, [allRecords, selectedFacility]);
+  const facilityRecords = useFacilityFilter(allRecords, selectedFacility);
+  const records = useMemo(() =>
+    [...facilityRecords].sort((a, b) => new Date(b.issueDate || '').getTime() - new Date(a.issueDate || '').getTime()),
+    [facilityRecords]
+  );
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -197,11 +195,11 @@ export default function MaintenanceHistory({
 
   const [deleteModal, setDeleteModal] = useState<{isOpen: boolean, id: string | null}>({ isOpen: false, id: null });
 
-  const handleUpdate = async (id: string, data: Partial<MaintenanceRecord>) => {
+  const handleUpdate = useCallback(async (id: string, data: Partial<MaintenanceRecord>) => {
     // OPTIMIZATION: Optimistically close the edit mode for instant UI response
     const currentEditingId = editingId;
     setEditingId(null);
-    
+
     try {
       await updateDoc(doc(db, 'maintenanceRecords', id), data);
     } catch (error) {
@@ -210,9 +208,9 @@ export default function MaintenanceHistory({
       setEditingId(currentEditingId);
       alert('Failed to update record. The UI has been reset.');
     }
-  };
+  }, [editingId]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (deleteModal.id) {
       try {
         await deleteDoc(doc(db, 'maintenanceRecords', deleteModal.id));
@@ -222,7 +220,7 @@ export default function MaintenanceHistory({
         alert('Failed to delete record.');
       }
     }
-  };
+  }, [deleteModal]);
 
   const filteredRecords = useMemo(() => {
     let result = records.filter(record => {
