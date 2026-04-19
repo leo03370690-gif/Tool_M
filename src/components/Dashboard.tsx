@@ -131,6 +131,30 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
 
   const handleDragEnd = () => { dragIndex.current = null; };
 
+  const handleTouchStart = (e: React.TouchEvent, index: number) => {
+    dragIndex.current = index;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (dragIndex.current === null) return;
+    const touch = e.touches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    const button = target?.closest('button[data-index]');
+    
+    if (button) {
+      const index = parseInt(button.getAttribute('data-index') || '-1', 10);
+      if (index >= 0 && dragIndex.current !== index) {
+        const newItems = [...menuItems];
+        const [dragged] = newItems.splice(dragIndex.current, 1);
+        newItems.splice(index, 0, dragged);
+        dragIndex.current = index;
+        setMenuOrder(newItems.map(i => i.id));
+      }
+    }
+  };
+
+  const handleTouchEnd = () => { dragIndex.current = null; };
+
   const handleLogout = () => signOut(auth);
 
   return (
@@ -190,6 +214,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
             return (
               <button
                 key={item.id}
+                data-index={idx}
                 draggable
                 onDragStart={(e) => handleDragStart(e, idx)}
                 onDragOver={(e) => handleDragOver(e, idx)}
@@ -208,7 +233,17 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
                 className="group relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors select-none"
               >
                 {isSidebarOpen && (
-                  <GripVertical className="h-3.5 w-3.5 shrink-0 opacity-0 group-hover:opacity-60 cursor-grab transition-opacity" style={{ color: 'var(--sb-grip)' }} />
+                  <div
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                      handleTouchStart(e, idx);
+                    }}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    className="touch-none flex items-center justify-center shrink-0 cursor-grab"
+                  >
+                    <GripVertical className="h-3.5 w-3.5 opacity-40 md:opacity-0 group-hover:opacity-60 transition-opacity" style={{ color: 'var(--sb-grip)' }} />
+                  </div>
                 )}
                 <item.icon className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" style={{ color: isActive ? 'var(--sb-icon-active)' : 'var(--sb-icon)' }} />
                 {isSidebarOpen && (
