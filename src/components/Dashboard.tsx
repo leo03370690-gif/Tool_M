@@ -1,15 +1,15 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 import { User as FirebaseUser, signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  LayoutDashboard, 
-  Box, 
-  Settings, 
-  Users, 
-  LogOut, 
+  LayoutDashboard,
+  Box,
+  Settings,
+  Users,
+  LogOut,
   ChevronRight,
   Cpu,
   Wrench,
@@ -26,7 +26,8 @@ import {
   X,
   Loader2,
   ArrowLeft,
-  BarChart2
+  BarChart2,
+  GripVertical
 } from 'lucide-react';
 
 const ProductInfo = lazy(() => import('./ProductInfo'));
@@ -69,7 +70,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
     setActiveTab(tab);
   };
 
-  const menuItems = [
+  const allMenuItems = [
     { id: 'analytics', label: 'Analytics', icon: BarChart2 },
     { id: 'product', label: 'Product Info', icon: Box },
     { id: 'socket', label: 'Socket Info', icon: Cpu },
@@ -80,13 +81,55 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
     { id: 'maintenance-history', label: 'Maintenance History', icon: History },
     { id: 'required-pogo-pin', label: 'Required Pogo Pin', icon: Calculator },
     { id: 'settings', label: 'Settings', icon: Settings },
+    ...(isAdmin ? [
+      { id: 'data-management', label: 'Data Management', icon: DatabaseBackup },
+      { id: 'users', label: 'User Management', icon: Users },
+      { id: 'audit-logs', label: 'Audit Logs', icon: Clock },
+    ] : []),
   ];
 
-  if (isAdmin) {
-    menuItems.push({ id: 'data-management', label: 'Data Management', icon: DatabaseBackup });
-    menuItems.push({ id: 'users', label: 'User Management', icon: Users });
-    menuItems.push({ id: 'audit-logs', label: 'Audit Logs', icon: Clock });
-  }
+  const [menuOrder, setMenuOrder] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('dashboard_menu_order');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  useEffect(() => {
+    if (menuOrder.length > 0) {
+      localStorage.setItem('dashboard_menu_order', JSON.stringify(menuOrder));
+    }
+  }, [menuOrder]);
+
+  const menuItems = menuOrder.length > 0
+    ? [...allMenuItems].sort((a, b) => {
+        const ai = menuOrder.indexOf(a.id);
+        const bi = menuOrder.indexOf(b.id);
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+      })
+    : allMenuItems;
+
+  const dragIndex = useRef<number | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    dragIndex.current = index;
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragIndex.current === null || dragIndex.current === index) return;
+    const newItems = [...menuItems];
+    const [dragged] = newItems.splice(dragIndex.current, 1);
+    newItems.splice(index, 0, dragged);
+    dragIndex.current = index;
+    setMenuOrder(newItems.map(i => i.id));
+  };
+
+  const handleDragEnd = () => { dragIndex.current = null; };
 
   const handleLogout = () => signOut(auth);
 
@@ -140,24 +183,31 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
         </div>
 
         <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-          {menuItems.map((item) => (
+          {menuItems.map((item, idx) => (
             <button
               key={item.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, idx)}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDragEnd={handleDragEnd}
               onClick={() => {
                 setActiveTab(item.id as Tab);
                 setTabHistory([]);
                 setIsMobileMenuOpen(false);
               }}
               className={cn(
-                "group relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all",
-                activeTab === item.id 
-                  ? "sidebar-item-active" 
+                "group relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all select-none",
+                activeTab === item.id
+                  ? "sidebar-item-active"
                   : "text-zinc-500 hover:bg-zinc-100 hover:text-brand-primary"
               )}
             >
+              {isSidebarOpen && (
+                <GripVertical className="h-3.5 w-3.5 shrink-0 text-zinc-300 opacity-0 group-hover:opacity-100 cursor-grab transition-opacity" />
+              )}
               <item.icon className={cn("h-5 w-5 shrink-0 transition-transform group-hover:scale-110", activeTab === item.id ? "text-brand-primary" : "text-zinc-400")} />
               {isSidebarOpen && (
-                <motion.span 
+                <motion.span
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   className="flex-1 text-left"
