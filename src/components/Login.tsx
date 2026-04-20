@@ -4,6 +4,8 @@ import { auth } from '../firebase';
 import { cn } from '../lib/utils';
 import { LogIn, Loader2, ShieldCheck, Lock, User, Mail, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -14,6 +16,7 @@ export default function Login() {
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [resetMessage, setResetMessage] = useState({ text: '', type: 'success' });
+  const { t } = useTranslation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,11 +30,11 @@ export default function Login() {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
       if (err.code === 'resource-exhausted' || err.message?.includes('quota')) {
-        setError('系統寫入配額已滿，暫時無法處理新用戶登入。請稍後再試。');
+        setError(t('errors.quotaExceededLogin'));
       } else if (err.code === 'auth/invalid-credential') {
-        setError('帳號或密碼錯誤。如果您有設定自訂 Email，請使用 Email 登入。');
+        setError(t('errors.invalidCredentials'));
       } else {
-        setError('登入失敗：' + (err.message || '未知錯誤'));
+        setError(t('errors.unknown'));
       }
       console.error('Login error:', err);
     } finally {
@@ -64,6 +67,10 @@ export default function Login() {
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
       
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSwitcher />
+      </div>
+
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -85,9 +92,9 @@ export default function Login() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <h1 className="font-serif text-4xl italic tracking-tight text-zinc-900">Tooling Matrix</h1>
+              <h1 className="font-serif text-4xl italic tracking-tight text-zinc-900">{t('auth.title')}</h1>
               <p className="mt-3 text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-bold">
-                Management System v2.0
+                {t('auth.subtitle')}
               </p>
             </motion.div>
           </div>
@@ -117,7 +124,7 @@ export default function Login() {
                 </AnimatePresence>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Username / Email</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">{t('auth.usernameEmail')}</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                     <input
@@ -133,13 +140,13 @@ export default function Login() {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Password</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{t('auth.password')}</label>
                     <button 
                       type="button"
                       onClick={() => setShowResetModal(true)}
                       className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 transition-colors"
                     >
-                      Forgot Password?
+                      {t('auth.forgotPassword')}
                     </button>
                   </div>
                   <div className="relative">
@@ -167,7 +174,7 @@ export default function Login() {
                   ) : (
                     <>
                       <LogIn className="h-5 w-5" />
-                      <span className="tracking-widest uppercase">Sign In</span>
+                      <span className="tracking-widest uppercase">{t('auth.signIn')}</span>
                     </>
                   )}
                 </motion.button>
@@ -187,12 +194,12 @@ export default function Login() {
                   className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 transition-colors mb-4"
                 >
                   <ArrowLeft className="h-3 w-3" />
-                  Back to Login
+                  {t('auth.backToLogin')}
                 </button>
 
                 <div>
-                  <h3 className="text-xl font-bold text-zinc-900">Reset Password</h3>
-                  <p className="text-sm text-zinc-500 mt-1">Enter your email to receive a reset link.</p>
+                  <h3 className="text-xl font-bold text-zinc-900">{t('auth.resetPassword')}</h3>
+                  <p className="text-sm text-zinc-500 mt-1">{t('auth.resetDescription')}</p>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -213,7 +220,7 @@ export default function Login() {
                 </AnimatePresence>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Email Address</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">{t('auth.emailAddress')}</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                     <input
@@ -239,7 +246,7 @@ export default function Login() {
                   ) : (
                     <>
                       <Mail className="h-5 w-5" />
-                      <span className="tracking-widest uppercase">Send Reset Link</span>
+                      <span className="tracking-widest uppercase">{t('auth.sendResetLink')}</span>
                     </>
                   )}
                 </motion.button>
@@ -249,7 +256,7 @@ export default function Login() {
         </div>
         <div className="mt-8 text-center">
           <p className="text-[10px] text-zinc-400 uppercase tracking-[0.2em] font-bold">
-            Authorized Personnel Only
+            {t('auth.authorizedOnly')}
           </p>
         </div>
       </motion.div>

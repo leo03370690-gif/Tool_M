@@ -14,6 +14,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import OfflineBanner from './components/OfflineBanner';
 import ToastContainer from './components/ui/ToastContainer';
+import { useTranslation } from 'react-i18next';
 
 async function claimRole(user: User): Promise<string | null> {
   try {
@@ -47,6 +48,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     let unsubscribeDoc: (() => void) | null = null;
@@ -124,7 +126,7 @@ export default function App() {
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-5 w-5" />
                 <p className="text-sm font-bold tracking-wide">
-                  系統配額已達上限（每日寫入額度已滿）。部分功能（如匯入、刪除、修改）將暫時無法使用。
+                  {t('errors.quotaExceeded')}
                 </p>
               </div>
               <button

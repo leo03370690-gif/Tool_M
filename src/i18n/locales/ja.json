@@ -1,0 +1,51 @@
+{
+  "sidebar": {
+    "analytics": "分析",
+    "productInfo": "製品情報",
+    "socketInfo": "Socket 情報",
+    "changeKit": "Change Kit",
+    "pogoPin": "Pogo Pin",
+    "lifeTime": "寿命管理",
+    "loadBoard": "Load Board",
+    "maintenanceHistory": "メンテナンス履歴",
+    "requiredPogoPin": "必須 Pogo Pin",
+    "settings": "設定",
+    "dataManagement": "データ管理",
+    "userManagement": "ユーザー管理",
+    "auditLogs": "監査ログ",
+    "logout": "ログアウト"
+  },
+  "common": {
+    "goBack": "戻る",
+    "search": "検索",
+    "facility": "施設",
+    "change": "変更",
+    "language": "言語",
+    "offline": "現在オフラインです。ローカルのキャッシュデータを表示しています。変更は接続が回復した後に同期されます。",
+    "online": "ネットワーク接続が回復しました。",
+    "loading": "読み込み中..."
+  },
+  "errors": {
+    "unknown": "不明なエラーが発生しました。後でもう一度お試しください。",
+    "quotaExceeded": "システムのクォータを超過しました（1日の書き込み制限に達しました）。一部の機能（インポート、削除、更新など）は一時的に利用できません。",
+    "quotaExceededLogin": "システムの書き込みクォータを超過しました。現在、新規ユーザーのログインを処理できません。後でもう一度お試しください。",
+    "permissionDenied": "この操作を実行する権限がありません。",
+    "networkError": "ネットワーク接続が不安定です。ネットワークのステータスを確認してください。",
+    "invalidCredentials": "アカウント名またはパスワードが間違っています。カスタムEmailを設定している場合は、Emailを使用してログインしてください。",
+    "accountLocked": "試行回数が多すぎます。アカウントは一時的にロックされています。後でもう一度お試しください。"
+  },
+  "auth": {
+    "title": "Tooling Matrix",
+    "subtitle": "管理システム v2.0",
+    "usernameEmail": "ユーザー名 / メール",
+    "password": "パスワード",
+    "forgotPassword": "パスワードをお忘れですか？",
+    "signIn": "ログイン",
+    "resetPassword": "パスワードをリセット",
+    "resetDescription": "リセットリンクを受け取るには、メールアドレスを入力してください。",
+    "backToLogin": "ログインに戻る",
+    "emailAddress": "メールアドレス",
+    "sendResetLink": "リセットリンクを送信",
+    "authorizedOnly": "許可された担当者のみ"
+  }
+}

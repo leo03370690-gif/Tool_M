@@ -1,0 +1,51 @@
+{
+  "sidebar": {
+    "analytics": "Analytics",
+    "productInfo": "Product Info",
+    "socketInfo": "Socket Info",
+    "changeKit": "Change Kit",
+    "pogoPin": "Pogo Pin",
+    "lifeTime": "Life Time",
+    "loadBoard": "Load Board",
+    "maintenanceHistory": "Maintenance History",
+    "requiredPogoPin": "Required Pogo Pin",
+    "settings": "Settings",
+    "dataManagement": "Data Management",
+    "userManagement": "User Management",
+    "auditLogs": "Audit Logs",
+    "logout": "Logout"
+  },
+  "common": {
+    "goBack": "Go Back",
+    "search": "Search",
+    "facility": "Facility",
+    "change": "Change",
+    "language": "Language",
+    "offline": "Currently offline — showing local cached data, changes will be synced when connection is restored.",
+    "online": "Network connection restored.",
+    "loading": "Loading..."
+  },
+  "errors": {
+    "unknown": "An unknown error occurred. Please try again later.",
+    "quotaExceeded": "System quota exceeded (daily write limit reached). Some features (e.g. import, delete, update) will be temporarily unavailable.",
+    "quotaExceededLogin": "System quota exceeded. Cannot process new user login temporarily. Please try again later.",
+    "permissionDenied": "Insufficient permissions to perform this action.",
+    "networkError": "Unstable network connection, please check your network status.",
+    "invalidCredentials": "Incorrect username or password. If you have a custom Email, please use Email to login.",
+    "accountLocked": "Too many attempts. Account is temporarily locked, please try again later."
+  },
+  "auth": {
+    "title": "Tooling Matrix",
+    "subtitle": "Management System v2.0",
+    "usernameEmail": "Username / Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "signIn": "Sign In",
+    "resetPassword": "Reset Password",
+    "resetDescription": "Enter your email to receive a reset link.",
+    "backToLogin": "Back to Login",
+    "emailAddress": "Email Address",
+    "sendResetLink": "Send Reset Link",
+    "authorizedOnly": "Authorized Personnel Only"
+  }
+}

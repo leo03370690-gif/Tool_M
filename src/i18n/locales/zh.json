@@ -1,0 +1,51 @@
+{
+  "sidebar": {
+    "analytics": "數據分析",
+    "productInfo": "產品資訊",
+    "socketInfo": "Socket 資訊",
+    "changeKit": "Change Kit 資訊",
+    "pogoPin": "Pogo Pin 庫存",
+    "lifeTime": "壽命管理",
+    "loadBoard": "Load Board 管理",
+    "maintenanceHistory": "維修紀錄",
+    "requiredPogoPin": "Pogo Pin 需求",
+    "settings": "系統設定",
+    "dataManagement": "資料管理",
+    "userManagement": "帳號管理",
+    "auditLogs": "稽核日誌",
+    "logout": "登出系統"
+  },
+  "common": {
+    "goBack": "返回",
+    "search": "搜尋功能",
+    "facility": "廠區",
+    "change": "更改",
+    "language": "語言",
+    "offline": "目前離線 — 顯示的是本地快取資料，異動將在恢復連線後同步",
+    "online": "已恢復網路連線",
+    "loading": "載入中..."
+  },
+  "errors": {
+    "unknown": "發生未知錯誤，請稍後再試。",
+    "quotaExceeded": "系統配額已達上限（每日寫入額度已滿）。部分功能（如匯入、刪除、修改）將暫時無法使用。",
+    "quotaExceededLogin": "系統寫入配額已滿，暫時無法處理新用戶登入。請稍後再試。",
+    "permissionDenied": "權限不足，無法執行此操作。",
+    "networkError": "網路連線不穩定，請檢查您的網路狀態。",
+    "invalidCredentials": "帳號或密碼錯誤。如果您有設定自訂 Email，請使用 Email 登入。",
+    "accountLocked": "嘗試次數過多，帳號已暫時鎖定，請稍後再試。"
+  },
+  "auth": {
+    "title": "Tooling Matrix",
+    "subtitle": "管理系統 v2.0",
+    "usernameEmail": "使用者名稱 / Email",
+    "password": "密碼",
+    "forgotPassword": "忘記密碼？",
+    "signIn": "登入",
+    "resetPassword": "重設密碼",
+    "resetDescription": "輸入您的 Email 以接收重設連結。",
+    "backToLogin": "返回登入",
+    "emailAddress": "Email 地址",
+    "sendResetLink": "發送重設連結",
+    "authorizedOnly": "僅限授權人員使用"
+  }
+}
