@@ -14,7 +14,7 @@ export function useCollectionCRUD<T extends Record<string, unknown>>(collectionN
       return true;
     } catch (err) {
       console.error(`Error adding to ${collectionName}:`, err);
-      addToast(t('crud.addFailed'), 'error');
+      addToast(t('crud.addError'), 'error');
       return false;
     }
   }, [collectionName, addToast, t]);
@@ -25,7 +25,7 @@ export function useCollectionCRUD<T extends Record<string, unknown>>(collectionN
       return true;
     } catch (err) {
       console.error(`Error updating ${collectionName}:`, err);
-      addToast(t('crud.updateFailed'), 'error');
+      addToast(t('crud.updateError'), 'error');
       return false;
     }
   }, [collectionName, addToast, t]);
@@ -35,14 +35,14 @@ export function useCollectionCRUD<T extends Record<string, unknown>>(collectionN
       await deleteDoc(doc(db, collectionName, id));
       if (undoData) {
         addToast(t('crud.deleted'), 'success', {
-          label: t('common.undo'),
+          label: t('crud.undo'),
           onClick: () => addDoc(collection(db, collectionName), undoData),
         });
       }
       return true;
     } catch (err) {
       console.error(`Error deleting from ${collectionName}:`, err);
-      addToast(t('crud.deleteFailed'), 'error');
+      addToast(t('crud.deleteError'), 'error');
       return false;
     }
   }, [collectionName, addToast, t]);

@@ -8,8 +8,6 @@ type Rule<T> = {
   pattern?: { regex: RegExp; message: string };
 };
 
-import i18n from '../i18n/config';
-
 export function validateForm<T>(
   data: Partial<T>,
   rules: Rule<T>[],

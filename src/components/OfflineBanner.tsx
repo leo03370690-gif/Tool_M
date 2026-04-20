@@ -35,7 +35,7 @@ export default function OfflineBanner() {
           className="fixed top-0 left-0 right-0 z-[200] flex items-center justify-center gap-3 bg-zinc-900 text-white px-6 py-3 text-sm font-medium shadow-2xl"
         >
           <WifiOff className="h-4 w-4 text-amber-400 shrink-0" />
-          <span>{t('offline.message')}</span>
+          <span>{t('common.offline')}</span>
         </motion.div>
       )}
       {!isOffline && showReconnected && (
@@ -47,7 +47,7 @@ export default function OfflineBanner() {
           className="fixed top-0 left-0 right-0 z-[200] flex items-center justify-center gap-3 bg-emerald-600 text-white px-6 py-3 text-sm font-medium shadow-2xl"
         >
           <Wifi className="h-4 w-4 shrink-0" />
-          <span>{t('offline.reconnected')}</span>
+          <span>{t('common.online')}</span>
         </motion.div>
       )}
     </AnimatePresence>

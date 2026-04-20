@@ -15,7 +15,6 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import OfflineBanner from './components/OfflineBanner';
 import ToastContainer from './components/ui/ToastContainer';
-import { useTranslation } from 'react-i18next';
 
 async function claimRole(user: User): Promise<string | null> {
   try {
@@ -50,7 +49,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState<string | null>(null);
-  const { t } = useTranslation();
 
   useEffect(() => {
     let unsubscribeDoc: (() => void) | null = null;
@@ -128,7 +126,7 @@ export default function App() {
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-5 w-5" />
                 <p className="text-sm font-bold tracking-wide">
-                  {t('app.quotaWarning')}
+                  {t('errors.quotaExceeded')}
                 </p>
               </div>
               <button

@@ -5,6 +5,7 @@ import { cn } from '../lib/utils';
 import { LogIn, Loader2, ShieldCheck, Lock, User, Mail, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Login() {
   const { t } = useTranslation();
@@ -16,7 +17,6 @@ export default function Login() {
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [resetMessage, setResetMessage] = useState({ text: '', type: 'success' });
-  const { t } = useTranslation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +30,9 @@ export default function Login() {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
       if (err.code === 'resource-exhausted' || err.message?.includes('quota')) {
-        setError(t('login.quotaFull'));
+        setError(t('errors.quotaExceededLogin'));
       } else if (err.code === 'auth/invalid-credential') {
-        setError(t('login.authError'));
+        setError(t('errors.invalidCredentials'));
       } else {
         setError(t('login.failed') + (err.message || t('error.unknownError')));
       }

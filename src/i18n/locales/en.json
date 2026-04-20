@@ -23,7 +23,11 @@
     "language": "Language",
     "offline": "Currently offline — showing local cached data, changes will be synced when connection is restored.",
     "online": "Network connection restored.",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "duplicate": "Duplicate",
+    "exportExcel": "Export to Excel"
   },
   "errors": {
     "unknown": "An unknown error occurred. Please try again later.",
@@ -58,6 +62,50 @@
   "validate": {
     "required": "\"{{label}}\" is required",
     "minLength": "\"{{label}}\" must be at least {{min}} characters"
+  },
+  "error": {
+    "pageError": "Something went wrong on this page.",
+    "unknownError": "An unknown error occurred.",
+    "retry": "Retry",
+    "unknownRetry": "An unknown error occurred. Please try again."
+  },
+  "login": {
+    "failed": "Login failed: "
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "colored": "Colored"
+  },
+  "bulk": {
+    "selected": "items selected",
+    "deleteSelected": "Delete Selected"
+  },
+  "views": {
+    "title": "Saved Views",
+    "preset": "Presets",
+    "saveCurrent": "Save Current",
+    "namePlaceholder": "View name...",
+    "empty": "No saved views yet"
+  },
+  "dashboard": {
+    "searchTitle": "Quick Navigation",
+    "searchLabel": "Quick Navigate"
+  },
+  "data": {
+    "noMatch": "No matching sheets found",
+    "importPreview": "Import Preview",
+    "importPreviewDesc": "Review the data before importing",
+    "totalRows": "{{count}} rows total",
+    "noValidRows": "No valid rows found",
+    "moreRows": "... and {{count}} more rows",
+    "confirmImport": "Confirm Import"
+  },
+  "users": {
+    "emailHint": "If you have a custom email address, please use email to login."
+  },
+  "info": {
+    "recordCopied": "Record copied successfully"
   },
   "facilitySelection": {
     "signOut": "Sign Out",
@@ -115,7 +163,9 @@
     "stats": "STATS",
     "card": "CARD",
     "table": "TABLE",
-    "copied": "Record copied successfully"
+    "copied": "Record copied successfully",
+    "clear": "Clear",
+    "confirmSave": "Confirm & Save"
   },
   "productInfo": {
     "title": "Product Inventory",

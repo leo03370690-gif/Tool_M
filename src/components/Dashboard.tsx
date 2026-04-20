@@ -5,8 +5,6 @@ import ErrorBoundary from './ErrorBoundary';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { cn } from '../lib/utils';
-import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from './LanguageSwitcher';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard,
@@ -63,7 +61,6 @@ type Tab = 'product' | 'socket' | 'change-kit' | 'pogo-pin' | 'life-time' | 'loa
 export default function Dashboard({ user, role, selectedFacility, onBackToFacility }: DashboardProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('product');
-  const { t } = useTranslation();
   const [tabHistory, setTabHistory] = useState<Tab[]>([]);
   const [maintenanceInitialData, setMaintenanceInitialData] = useState<any>(null);
   const [selectedLBNo, setSelectedLBNo] = useState<string | null>(null);

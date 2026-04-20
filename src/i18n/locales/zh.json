@@ -23,7 +23,11 @@
     "language": "語言",
     "offline": "目前離線 — 顯示的是本地快取資料，異動將在恢復連線後同步",
     "online": "已恢復網路連線",
-    "loading": "載入中..."
+    "loading": "載入中...",
+    "save": "儲存",
+    "cancel": "取消",
+    "duplicate": "複製",
+    "exportExcel": "匯出 Excel"
   },
   "errors": {
     "unknown": "發生未知錯誤，請稍後再試。",
@@ -58,6 +62,50 @@
   "validate": {
     "required": "「{{label}}」為必填欄位",
     "minLength": "「{{label}}」最少需 {{min}} 個字元"
+  },
+  "error": {
+    "pageError": "此頁面發生錯誤。",
+    "unknownError": "發生未知錯誤。",
+    "retry": "重試",
+    "unknownRetry": "發生未知錯誤，請稍後再試。"
+  },
+  "login": {
+    "failed": "登入失敗："
+  },
+  "theme": {
+    "light": "淺色",
+    "dark": "深色",
+    "colored": "彩色"
+  },
+  "bulk": {
+    "selected": "筆已選取",
+    "deleteSelected": "刪除選取"
+  },
+  "views": {
+    "title": "已儲存的視圖",
+    "preset": "預設",
+    "saveCurrent": "儲存目前",
+    "namePlaceholder": "視圖名稱...",
+    "empty": "尚無已儲存的視圖"
+  },
+  "dashboard": {
+    "searchTitle": "快速導覽",
+    "searchLabel": "快速導覽"
+  },
+  "data": {
+    "noMatch": "找不到匹配的工作表",
+    "importPreview": "匯入預覽",
+    "importPreviewDesc": "匯入前請先確認資料",
+    "totalRows": "共 {{count}} 列",
+    "noValidRows": "找不到有效的列",
+    "moreRows": "... 還有 {{count}} 列",
+    "confirmImport": "確認匯入"
+  },
+  "users": {
+    "emailHint": "如果您有自訂的電子郵件地址，請使用電子郵件登入。"
+  },
+  "info": {
+    "recordCopied": "記錄已複製成功"
   },
   "facilitySelection": {
     "signOut": "登出",
@@ -115,7 +163,9 @@
     "stats": "統計",
     "card": "卡片",
     "table": "表格",
-    "copied": "記錄已複製"
+    "copied": "記錄已複製",
+    "clear": "清除",
+    "confirmSave": "確認並儲存"
   },
   "productInfo": {
     "title": "產品庫存",

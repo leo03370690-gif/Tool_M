@@ -7,28 +7,28 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getFirestoreErrorMessage(error: any): string {
-  if (!error) return i18next.t('error.unknown');
+  if (!error) return i18next.t('errors.unknown');
 
   const code = error.code || error.message;
 
   if (code === 'resource-exhausted' || (typeof code === 'string' && code.includes('quota'))) {
-    return i18next.t('error.quota');
+    return i18next.t('errors.quotaExceeded');
   }
 
   if (code === 'permission-denied') {
-    return i18next.t('error.permission');
+    return i18next.t('errors.permissionDenied');
   }
 
   if (code === 'unavailable') {
-    return i18next.t('error.network');
+    return i18next.t('errors.networkError');
   }
 
   if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-    return i18next.t('error.auth');
+    return i18next.t('errors.invalidCredentials');
   }
 
   if (code === 'auth/too-many-requests') {
-    return i18next.t('error.tooManyRequests');
+    return i18next.t('errors.accountLocked');
   }
 
   return error.message || i18next.t('error.unknownRetry');

@@ -3,7 +3,6 @@ import { useTheme, type Theme, type SidebarStyle } from '../contexts/ThemeContex
 import { Palette, Check, PanelLeft, Languages } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
-import i18next from 'i18next';
 
 const COLOR_THEMES: { id: Theme; name: string; primary: string; accent: string; bg: string }[] = [
   { id: 'default', name: 'Noir',       primary: '#09090b', accent: '#F27D26', bg: '#fafafa' },
@@ -63,6 +62,7 @@ function SidebarPreview({ sbBg, accent, isSelected }: { sbBg: string; accent: st
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
+  { code: 'zh', label: '繁體中文' },
   { code: 'ja', label: '日本語' },
 ];
 
@@ -126,7 +126,7 @@ export function ThemeSwitcher() {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Languages className="h-3.5 w-3.5 text-zinc-400" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{t('theme.language')}</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{t('common.language')}</span>
           <div className="flex-1 h-px bg-zinc-100" />
         </div>
         <div className="flex gap-3">

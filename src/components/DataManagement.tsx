@@ -587,7 +587,7 @@ export default function DataManagement() {
           let errorMessage = getFirestoreErrorMessage(err);
           
           if (err.code === 'resource-exhausted' || err.message?.includes('quota')) {
-            errorMessage = t('data.quotaExceeded');
+            errorMessage = t('errors.quotaExceeded');
           }
 
           setModal({
@@ -1045,7 +1045,7 @@ export default function DataManagement() {
             </div>
             <div className="flex justify-end gap-3 p-6 border-t border-zinc-100">
               <button onClick={() => setPreview(null)} className="px-6 py-2.5 text-sm font-bold text-zinc-500 hover:bg-zinc-100 rounded-xl transition-colors">
-                {t('common.cancel')}
+                {t('sharedTable.cancel')}
               </button>
               <button
                 onClick={() => {
