@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCollectionCRUD } from '../lib/useCollectionCRUD';
 import { Plus, Trash2, Edit2, Search, Check, X, List, LayoutGrid, Filter, ArrowUpDown, Download, Copy } from 'lucide-react';
 import { useExportExcel } from '../lib/useExportExcel';
@@ -42,6 +43,7 @@ const PinCard = React.memo(({
   setSaveModal: (modal: any) => void,
   handleDuplicate: (item: PogoPin) => void
 }) => {
+  const { t } = useTranslation();
   const [localData, setLocalData] = useState<Partial<PogoPin>>(pin);
   
   useEffect(() => {
@@ -65,7 +67,7 @@ const PinCard = React.memo(({
           <Filter className="h-6 w-6" />
         </div>
         <div className="text-right">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-1">Quantity</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-1">{t('pogoPinInfo.quantity')}</p>
           {isEditing ? (
             <input
               type="number"
@@ -83,7 +85,7 @@ const PinCard = React.memo(({
       </div>
 
       <div className="space-y-1">
-        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">Part Number</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">{t('pogoPinInfo.partNumber')}</p>
         {isEditing ? (
           <input
             type="text"
@@ -105,7 +107,7 @@ const PinCard = React.memo(({
                 className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-50 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-100 transition-all"
               >
                 <Check className="h-3.5 w-3.5" />
-                SAVE
+                {t('pogoPinInfo.save')}
               </button>
               <button 
                 onClick={() => { setLocalData(pin); setEditingId(null); }} 
@@ -121,12 +123,12 @@ const PinCard = React.memo(({
                 className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-zinc-50 py-2.5 text-xs font-bold text-zinc-500 hover:bg-brand-primary hover:text-white transition-all"
               >
                 <Edit2 className="h-3.5 w-3.5" />
-                EDIT
+                {t('pogoPinInfo.edit')}
               </button>
               <button
                 onClick={() => handleDuplicate(pin)}
                 className="p-2.5 rounded-xl bg-zinc-50 text-zinc-400 hover:bg-emerald-50 hover:text-emerald-500 transition-all"
-                title="複製"
+                title="Copy"
               >
                 <Copy className="h-4 w-4" />
               </button>
@@ -173,6 +175,7 @@ const PinRow = React.memo(({
   isSelected: boolean,
   onToggle: () => void
 }) => {
+  const { t } = useTranslation();
   const [localData, setLocalData] = useState<Partial<PogoPin>>(pin);
   
   useEffect(() => {
@@ -252,7 +255,7 @@ const PinRow = React.memo(({
               <button
                 onClick={() => handleDuplicate(pin)}
                 className="p-2 rounded-lg hover:bg-white hover:shadow-sm text-zinc-400 hover:text-emerald-500 transition-all"
-                title="複製"
+                title="Copy"
               >
                 <Copy className="h-4 w-4" />
               </button>
@@ -271,6 +274,7 @@ const PinRow = React.memo(({
 });
 
 export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
+  const { t } = useTranslation();
   const { add, update, remove } = useCollectionCRUD<PogoPin>('pogoPins');
   const { addToast } = useToast();
   const { exportToExcel } = useExportExcel();
@@ -336,7 +340,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   const handleDuplicate = async (item: PogoPin) => {
     const { id: _id, ...data } = item as any;
     const ok = await add(data as Partial<PogoPin>);
-    if (ok) addToast('記錄已複製', 'success');
+    if (ok) addToast(t('sharedTable.copied'), 'success');
   };
 
   const handleBulkDelete = async () => {
@@ -372,17 +376,17 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   }, [pins, debouncedSearchTerm, filterPinPns, sortConfig]);
 
   const columns = [
-    { key: 'facility', label: 'Facility' },
-    { key: 'pinPn', label: 'Part Number' },
-    { key: 'qty', label: 'Quantity' },
+    { key: 'facility', label: t('pogoPinInfo.columns.facility') },
+    { key: 'pinPn', label: t('pogoPinInfo.columns.pinPn') },
+    { key: 'qty', label: t('pogoPinInfo.columns.qty') },
   ];
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
-          <h2 className="font-serif text-3xl italic text-zinc-900">Pogo Pin Info</h2>
-          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">Monitor pogo pin inventory levels</p>
+          <h2 className="font-serif text-3xl italic text-zinc-900">{t('pogoPinInfo.title')}</h2>
+          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">{t('pogoPinInfo.subtitle')}</p>
         </div>
         <div className="flex items-center gap-4 flex-wrap justify-start md:justify-end w-full md:w-auto">
           <div className="flex flex-wrap items-center gap-1 bg-white border border-zinc-200 rounded-xl px-2 py-1 shadow-sm w-full sm:w-auto">
@@ -392,7 +396,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
               }}
               className="px-2 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors whitespace-nowrap"
             >
-              Clear Filters
+              {t('pogoPinInfo.clearFilters')}
             </button>
             <SavedViewsPanel
               views={savedViews}
@@ -409,7 +413,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
               values={filterPinPns}
               onChange={setFilterPinPns}
               options={uniquePinPns}
-              placeholder="All Part Numbers"
+              placeholder={t('pogoPinInfo.filters.allPartNumbers')}
             />
             <div className="w-px h-4 bg-zinc-200 mx-1"></div>
             <MultiSelectDropdown
@@ -419,14 +423,14 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                 setVisibleColumns(keys);
               }}
               options={columns.map(c => c.label)}
-              placeholder="Columns"
+              placeholder={t('sharedTable.columns')}
             />
           </div>
           <div className="relative group w-full sm:w-auto mt-2 sm:mt-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 group-focus-within:text-brand-primary transition-colors" />
             <input
               type="text"
-              placeholder="Search pins..."
+              placeholder={t('pogoPinInfo.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full sm:w-64 rounded-xl border border-zinc-200 bg-zinc-50/50 pl-10 pr-4 py-2.5 text-sm focus:border-brand-primary focus:bg-white focus:outline-none transition-all"
@@ -441,7 +445,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
               )}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
-              CARD
+              {t('sharedTable.card')}
             </button>
             <button
               onClick={() => setViewMode('table')}
@@ -451,7 +455,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
               )}
             >
               <List className="h-3.5 w-3.5" />
-              TABLE
+              {t('sharedTable.table')}
             </button>
           </div>
           <button
@@ -459,7 +463,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
             className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-600 hover:bg-zinc-50 transition-all shadow-sm active:scale-95 whitespace-nowrap"
           >
             <Download className="h-4 w-4" />
-            <span>匯出 Excel</span>
+            <span>{t('sharedTable.exportExcel')}</span>
           </button>
           {isAdmin && (
             <button
@@ -467,7 +471,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
               className="flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-all shadow-lg shadow-black/10 active:scale-95"
             >
               <Plus className="h-4 w-4" />
-              <span>ADD PIN</span>
+              <span>{t('pogoPinInfo.addPin')}</span>
             </button>
           )}
         </div>
@@ -512,7 +516,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                     />
                   </div>
                   <div className="mt-6 flex gap-2">
-                    <button onClick={handleAdd} className="flex-1 rounded-xl bg-emerald-50 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-100 transition-all">SAVE</button>
+                    <button onClick={handleAdd} className="flex-1 rounded-xl bg-emerald-50 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-100 transition-all">{t('pogoPinInfo.save')}</button>
                     <button onClick={() => setEditingId(null)} className="p-2.5 rounded-xl bg-zinc-50 text-zinc-400 hover:bg-zinc-100 transition-all"><X className="h-4 w-4" /></button>
                   </div>
                 </motion.div>
@@ -533,7 +537,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
             </AnimatePresence>
             {filteredPins.length > displayCount && (
               <div className="col-span-full py-8 text-center text-zinc-400 italic">
-                Showing {displayCount} of {filteredPins.length} pins. <button onClick={() => setDisplayCount(prev => prev + 100)} className="text-brand-primary hover:underline font-medium not-italic">Load more</button>.
+                {t('sharedTable.showingSubset', { displayCount, total: filteredPins.length })} <button onClick={() => setDisplayCount(prev => prev + 100)} className="text-brand-primary hover:underline font-medium not-italic">{t('pogoPinInfo.load100More')}</button>.
               </div>
             )}
           </motion.div>
@@ -573,7 +577,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                       </th>
                     ))}
                     {isAdmin && <th className="px-6 py-4 border-b border-zinc-100 text-right">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">Actions</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">{t('sharedTable.actions')}</span>
                     </th>}
                   </tr>
                 </thead>
@@ -627,7 +631,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                   {filteredPins.length > displayCount && (
                     <tr>
                       <td colSpan={visibleColumns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
-                        Showing {displayCount} of {filteredPins.length} pins. <button onClick={() => setDisplayCount(prev => prev + 100)} className="text-brand-primary hover:underline font-medium not-italic">Load more</button>.
+                        {t('sharedTable.showingSubset', { displayCount, total: filteredPins.length })} <button onClick={() => setDisplayCount(prev => prev + 100)} className="text-brand-primary hover:underline font-medium not-italic">{t('pogoPinInfo.load100More')}</button>.
                       </td>
                     </tr>
                   )}
@@ -654,23 +658,23 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
                   <Trash2 className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900">Confirm Deletion</h3>
+                <h3 className="text-xl font-bold text-zinc-900">{t('sharedTable.confirmDeletion')}</h3>
               </div>
               <p className="mb-8 text-sm leading-relaxed text-zinc-600">
-                Are you sure you want to delete this pogo pin record? This action cannot be undone and will be permanently removed from the system.
+                {t('pogoPinInfo.deleteWarning')}
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setModal({ isOpen: false, id: null })}
                   className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100"
                 >
-                  Cancel
+                  {t('sharedTable.cancel')}
                 </button>
                 <button
                   onClick={handleDelete}
                   className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-red-700 shadow-lg shadow-red-600/20"
                 >
-                  Delete Record
+                  {t('sharedTable.deleteRecord')}
                 </button>
               </div>
             </motion.div>
@@ -692,17 +696,17 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                   <Check className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900">Save Changes</h3>
+                <h3 className="text-xl font-bold text-zinc-900">{t('sharedTable.saveChanges')}</h3>
               </div>
               <p className="mb-8 text-sm leading-relaxed text-zinc-600">
-                Are you sure you want to save these changes to the database?
+                {t('sharedTable.saveWarning')}
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setSaveModal({ isOpen: false, id: null, data: null })}
                   className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100"
                 >
-                  Cancel
+                  {t('sharedTable.cancel')}
                 </button>
                 <button
                   onClick={() => {
@@ -713,7 +717,7 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                   }}
                   className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-emerald-700 shadow-lg shadow-emerald-600/20"
                 >
-                  Save Changes
+                  {t('sharedTable.saveChanges')}
                 </button>
               </div>
             </motion.div>

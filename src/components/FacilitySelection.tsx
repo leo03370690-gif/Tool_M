@@ -5,8 +5,10 @@ import { motion } from 'motion/react';
 import { Building2, Loader2, LogOut } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
+import { useTranslation } from 'react-i18next';
 
 export default function FacilitySelection({ onSelect }: { onSelect: (facility: string) => void }) {
+  const { t } = useTranslation();
   const [facilities, setFacilities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,7 +59,7 @@ export default function FacilitySelection({ onSelect }: { onSelect: (facility: s
           className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors bg-white px-4 py-2 rounded-xl shadow-sm border border-zinc-200"
         >
           <LogOut className="h-4 w-4" />
-          <span className="text-sm font-bold">Sign Out</span>
+          <span className="text-sm font-bold">{t('facilitySelection.signOut')}</span>
         </button>
       </div>
 
@@ -70,8 +72,8 @@ export default function FacilitySelection({ onSelect }: { onSelect: (facility: s
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-primary text-white mb-6 shadow-xl shadow-brand-primary/20">
             <Building2 className="h-8 w-8" />
           </div>
-          <h1 className="font-serif text-4xl italic tracking-tight text-zinc-900 mb-3">Select Facility</h1>
-          <p className="text-sm text-zinc-500 uppercase tracking-widest font-bold">Choose a facility to view its data</p>
+          <h1 className="font-serif text-4xl italic tracking-tight text-zinc-900 mb-3">{t('facilitySelection.title')}</h1>
+          <p className="text-sm text-zinc-500 uppercase tracking-widest font-bold">{t('facilitySelection.subtitle')}</p>
         </div>
 
         {loading ? (
@@ -80,12 +82,12 @@ export default function FacilitySelection({ onSelect }: { onSelect: (facility: s
           </div>
         ) : facilities.length === 0 ? (
           <div className="text-center p-12 bg-white rounded-3xl border border-zinc-200 shadow-sm">
-            <p className="text-zinc-500">No facilities found. Please import data first.</p>
+            <p className="text-zinc-500">{t('facilitySelection.noData')}</p>
             <button 
               onClick={() => onSelect('ALL')}
               className="mt-6 px-6 py-3 bg-brand-primary text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors"
             >
-              Continue to Dashboard
+              {t('facilitySelection.continue')}
             </button>
           </div>
         ) : (
@@ -101,7 +103,7 @@ export default function FacilitySelection({ onSelect }: { onSelect: (facility: s
               >
                 <div className="absolute top-0 left-0 w-1 h-full bg-brand-primary scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-300" />
                 <h3 className="text-2xl font-bold text-zinc-900 group-hover:text-brand-primary transition-colors">{facility}</h3>
-                <p className="mt-2 text-xs text-zinc-400 uppercase tracking-wider font-bold">View Data &rarr;</p>
+                <p className="mt-2 text-xs text-zinc-400 uppercase tracking-wider font-bold"><span dangerouslySetInnerHTML={{ __html: t('facilitySelection.viewData') }} /></p>
               </motion.button>
             ))}
           </div>

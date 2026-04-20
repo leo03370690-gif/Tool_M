@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCollectionCRUD } from '../lib/useCollectionCRUD';
 import { Plus, Trash2, Edit2, Search, BarChart2, List, Check, X, Filter, ArrowUpDown, Download, Copy } from 'lucide-react';
 import { useExportExcel } from '../lib/useExportExcel';
@@ -55,6 +56,7 @@ const KitRow = React.memo(({
   isSelected: boolean,
   onToggle: () => void
 }) => {
+  const { t } = useTranslation();
   const [localData, setLocalData] = useState<Partial<ChangeKit>>(kit);
   
   useEffect(() => {
@@ -135,7 +137,7 @@ const KitRow = React.memo(({
               <button
                 onClick={() => handleDuplicate(kit)}
                 className="p-2 rounded-lg hover:bg-white hover:shadow-sm text-zinc-400 hover:text-emerald-500 transition-all"
-                title="複製"
+                title="Copy"
               >
                 <Copy className="h-4 w-4" />
               </button>
@@ -154,6 +156,7 @@ const KitRow = React.memo(({
 });
 
 export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
+  const { t } = useTranslation();
   const { add, update, remove } = useCollectionCRUD<ChangeKit>('changeKits');
   const { addToast } = useToast();
   const { exportToExcel } = useExportExcel();
@@ -223,7 +226,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
   const handleDuplicate = async (item: ChangeKit) => {
     const { id: _id, ...data } = item as any;
     const ok = await add(data as Partial<ChangeKit>);
-    if (ok) addToast('記錄已複製', 'success');
+    if (ok) addToast(t('sharedTable.copied'), 'success');
   };
 
   const handleBulkDelete = async () => {
@@ -301,14 +304,14 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
   }, [kits, debouncedSearchTerm, filterToolsIds, filterChangeKitGroups, filterStatuses, sortConfig]);
 
   const allColumns = [
-    { key: 'facility', label: 'Facility' },
-    { key: 'location', label: 'Location' },
-    { key: 'kind', label: 'Kind' },
-    { key: 'toolsId', label: 'Tools ID' },
-    { key: 'packageSize', label: 'PACKAGE SIZE' },
-    { key: 'changeKitGroup', label: 'Change kit Group' },
-    { key: 'status', label: 'Status' },
-    { key: 'idleTime', label: 'Idle Time' },
+    { key: 'facility', label: t('changeKitInfo.columns.facility') },
+    { key: 'location', label: t('changeKitInfo.columns.location') },
+    { key: 'kind', label: t('changeKitInfo.columns.kind') },
+    { key: 'toolsId', label: t('changeKitInfo.columns.toolsId') },
+    { key: 'packageSize', label: t('changeKitInfo.columns.packageSize') },
+    { key: 'changeKitGroup', label: t('changeKitInfo.columns.changeKitGroup') },
+    { key: 'status', label: t('changeKitInfo.columns.status') },
+    { key: 'idleTime', label: t('changeKitInfo.columns.idleTime') },
   ];
 
   const columns = allColumns.filter(col => visibleColumns.includes(col.key));
@@ -317,8 +320,8 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">Change Kit Info</h2>
-          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">Manage change kit inventory and status</p>
+          <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">{t('changeKitInfo.title')}</h2>
+          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">{t('changeKitInfo.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex rounded-xl border border-zinc-200 bg-zinc-50/50 p-1">
@@ -330,7 +333,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
               )}
             >
               <List className="h-3.5 w-3.5" />
-              LIST
+              {t('sharedTable.list')}
             </button>
             <button
               onClick={() => setViewMode('stats')}
@@ -340,7 +343,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
               )}
             >
               <BarChart2 className="h-3.5 w-3.5" />
-              STATS
+              {t('sharedTable.stats')}
             </button>
           </div>
           <button
@@ -348,7 +351,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
             className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-600 hover:bg-zinc-50 transition-all shadow-sm active:scale-95 whitespace-nowrap"
           >
             <Download className="h-4 w-4" />
-            <span>匯出 Excel</span>
+            <span>{t('sharedTable.exportExcel')}</span>
           </button>
           {isAdmin && (
             <button
@@ -356,7 +359,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
               className="flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
             >
               <Plus className="h-4 w-4" />
-              <span>ADD KIT</span>
+              <span>{t('changeKitInfo.addKit')}</span>
             </button>
           )}
         </div>
@@ -374,7 +377,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
               }}
               className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors whitespace-nowrap"
             >
-              Clear
+              {t('sharedTable.clearFilters')}
             </button>
             <SavedViewsPanel
               views={savedViews}
@@ -394,19 +397,19 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
               values={filterToolsIds}
               onChange={setFilterToolsIds}
               options={uniqueToolsIds}
-              placeholder="Tools IDs"
+              placeholder={t('changeKitInfo.filters.toolsIds')}
             />
             <MultiSelectDropdown
               values={filterChangeKitGroups}
               onChange={setFilterChangeKitGroups}
               options={uniqueChangeKitGroups}
-              placeholder="Kit Groups"
+              placeholder={t('changeKitInfo.filters.kitGroups')}
             />
             <MultiSelectDropdown
               values={filterStatuses}
               onChange={setFilterStatuses}
               options={uniqueStatuses}
-              placeholder="Statuses"
+              placeholder={t('changeKitInfo.filters.statuses')}
             />
             <div className="w-px h-4 bg-zinc-200 shrink-0 mx-1"></div>
             <MultiSelectDropdown
@@ -416,7 +419,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                 setVisibleColumns(newVisible);
               }}
               options={allColumns.map(c => c.label)}
-              placeholder="Columns"
+              placeholder={t('sharedTable.columns')}
             />
           </div>
         </div>
@@ -425,7 +428,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
-            placeholder="Search kits..."
+            placeholder={t('changeKitInfo.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-xl border border-zinc-100 bg-zinc-50/50 pl-10 pr-4 py-2 text-sm focus:border-brand-primary focus:bg-white focus:outline-none transition-all"
@@ -470,7 +473,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                       </th>
                     ))}
                     {isAdmin && <th className="px-6 py-4 border-b border-zinc-100 text-right">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">Actions</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">{t('sharedTable.actions')}</span>
                     </th>}
                   </tr>
                 </thead>
@@ -523,14 +526,16 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                   {filteredKits.length > displayCount && (
                     <tr>
                       <td colSpan={columns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
-                        Showing {displayCount} of {filteredKits.length} kits. Use filters to narrow down results, or <button onClick={() => setDisplayCount(prev => prev + 200)} className="text-brand-primary hover:underline font-medium not-italic">load 200 more</button>.
+                        {t('sharedTable.showingSubset', { displayCount, total: filteredKits.length })}
+                        <button onClick={() => setDisplayCount(prev => prev + 200)} className="text-brand-primary hover:underline font-medium not-italic">{t('changeKitInfo.load200More')}</button>.
                       </td>
                     </tr>
                   )}
                   {displayCount > 100 && filteredKits.length <= displayCount && (
                     <tr>
                       <td colSpan={columns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
-                        Showing all {filteredKits.length} kits. <button onClick={() => setDisplayCount(100)} className="text-brand-primary hover:underline font-medium not-italic">Show less</button>.
+                        {t('sharedTable.showingAll', { total: filteredKits.length })}
+                        <button onClick={() => setDisplayCount(100)} className="text-brand-primary hover:underline font-medium not-italic">{t('sharedTable.showLess')}</button>.
                       </td>
                     </tr>
                   )}
@@ -562,7 +567,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                     <div className="bg-zinc-50/50 px-6 py-5 border-b border-zinc-100 flex items-center justify-between">
                       <h3 className="font-serif italic text-2xl text-zinc-900">{location}</h3>
                       <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Total Kits</span>
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t('changeKitInfo.totalKits')}</span>
                         <span className="text-xl font-bold text-brand-primary">{total}</span>
                       </div>
                     </div>
@@ -594,7 +599,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
             </div>
             {Object.keys(stats).length === 0 && (
               <div className="py-12 text-center text-zinc-500 bg-white rounded-3xl border border-zinc-100 border-dashed">
-                No statistics available.
+                {t('sharedTable.noStats')}
               </div>
             )}
           </motion.div>
@@ -617,23 +622,23 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
                   <Trash2 className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900">Confirm Deletion</h3>
+                <h3 className="text-xl font-bold text-zinc-900">{t('sharedTable.confirmDeletion')}</h3>
               </div>
               <p className="mb-8 text-sm leading-relaxed text-zinc-600">
-                Are you sure you want to delete this change kit? This action cannot be undone and will be permanently removed from the system.
+                {t('changeKitInfo.deleteWarning')}
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setModal({ isOpen: false, id: null })}
                   className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100"
                 >
-                  Cancel
+                  {t('sharedTable.cancel')}
                 </button>
                 <button
                   onClick={handleDelete}
                   className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-red-700 shadow-lg shadow-red-600/20"
                 >
-                  Delete Record
+                  {t('sharedTable.deleteRecord')}
                 </button>
               </div>
             </motion.div>
@@ -655,17 +660,17 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                   <Check className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900">Save Changes</h3>
+                <h3 className="text-xl font-bold text-zinc-900">{t('sharedTable.saveChanges')}</h3>
               </div>
               <p className="mb-8 text-sm leading-relaxed text-zinc-600">
-                Are you sure you want to save these changes to the database?
+                {t('sharedTable.saveWarning')}
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setSaveModal({ isOpen: false, id: null, data: null })}
                   className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100"
                 >
-                  Cancel
+                  {t('sharedTable.cancel')}
                 </button>
                 <button
                   onClick={() => {
@@ -676,7 +681,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                   }}
                   className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-emerald-700 shadow-lg shadow-emerald-600/20"
                 >
-                  Save Changes
+                  {t('sharedTable.saveChanges')}
                 </button>
               </div>
             </motion.div>

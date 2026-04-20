@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCollectionCRUD } from '../lib/useCollectionCRUD';
 import { Plus, Trash2, Edit2, Check, X, Search, MoreHorizontal, BarChart2, List, Filter, ArrowUpDown, Download, Copy } from 'lucide-react';
 import { useExportExcel } from '../lib/useExportExcel';
@@ -73,6 +74,7 @@ const SocketRow = React.memo(({
   isSelected: boolean,
   onToggle: () => void
 }) => {
+  const { t } = useTranslation();
   const [localData, setLocalData] = useState<Partial<Socket>>(socket);
   
   useEffect(() => {
@@ -161,7 +163,7 @@ const SocketRow = React.memo(({
               <button
                 onClick={() => handleDuplicate(socket)}
                 className="p-2 rounded-lg hover:bg-white hover:shadow-sm text-zinc-400 hover:text-emerald-500 transition-all"
-                title="複製"
+                title="Copy"
               >
                 <Copy className="h-4 w-4" />
               </button>
@@ -180,6 +182,7 @@ const SocketRow = React.memo(({
 });
 
 export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
+  const { t } = useTranslation();
   const { add, update, remove } = useCollectionCRUD<Socket>('sockets');
   const { addToast } = useToast();
   const { exportToExcel } = useExportExcel();
@@ -252,7 +255,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
   const handleDuplicate = async (item: Socket) => {
     const { id: _id, ...data } = item as any;
     const ok = await add(data as Partial<Socket>);
-    if (ok) addToast('記錄已複製', 'success');
+    if (ok) addToast(t('sharedTable.copied'), 'success');
   };
 
   const handleBulkDelete = async () => {
@@ -336,32 +339,32 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
   }, [sockets, debouncedSearchTerm, filterSocketGroups, filterToolsIds, filterProjects, filterStatuses, filterPogoPinPns, sortConfig]);
 
   const allColumns = [
-    { key: 'facility', label: 'Facility' },
-    { key: 'location', label: 'Location' },
-    { key: 'toolsId', label: 'Tools ID' },
-    { key: 'package', label: 'PACKAGE' },
-    { key: 'pinBall', label: 'PIN BALL' },
-    { key: 'packageSize', label: 'PACKAGE SIZE' },
-    { key: 'project', label: 'PROJECT' },
-    { key: 'status', label: 'Status' },
-    { key: 'contactCountPin1', label: 'Contact Count - Pin1' },
-    { key: 'lifeCountPin1', label: 'Life Count - Pin1' },
-    { key: 'contactLimitPin1', label: 'Contact Limit - Pin1' },
-    { key: 'socketGroupPin1', label: 'Socket group - Pin1' },
-    { key: 'pogoPinPnPin1', label: 'Pogo pin P/N - Pin1' },
-    { key: 'socketPnPin1', label: 'Socket P/N - Pin1' },
-    { key: 'contactCountOver70Pin1', label: 'Contact count over 70% - Pin1' },
-    { key: 'contactCountPin2', label: 'Contact Count - Pin2' },
-    { key: 'lifeCountPin2', label: 'Life Count - Pin2' },
-    { key: 'contactLimitPin2', label: 'Contact Limit - Pin2' },
-    { key: 'pogoPinPnPin2', label: 'Pogo pin P/N - Pin2' },
-    { key: 'contactCountOver70Pin2', label: 'Contact count over 70% - Pin2' },
-    { key: 'contactCountPcb', label: 'Contact Count - PCB' },
-    { key: 'lifeCountPcb', label: 'Life Count - PCB' },
-    { key: 'contactLimitPcb', label: 'Contact Limit - PCB' },
-    { key: 'pnPcb', label: 'P/N - PCB' },
-    { key: 'contactCountOver70Pcb', label: 'Contact count over 70% - PCB' },
-    { key: 'usedFlag', label: 'Used Flag' },
+    { key: 'facility', label: t('socketInfo.columns.facility') },
+    { key: 'location', label: t('socketInfo.columns.location') },
+    { key: 'toolsId', label: t('socketInfo.columns.toolsId') },
+    { key: 'package', label: t('socketInfo.columns.package') },
+    { key: 'pinBall', label: t('socketInfo.columns.pinBall') },
+    { key: 'packageSize', label: t('socketInfo.columns.packageSize') },
+    { key: 'project', label: t('socketInfo.columns.project') },
+    { key: 'status', label: t('socketInfo.columns.status') },
+    { key: 'contactCountPin1', label: t('socketInfo.columns.contactCountPin1') },
+    { key: 'lifeCountPin1', label: t('socketInfo.columns.lifeCountPin1') },
+    { key: 'contactLimitPin1', label: t('socketInfo.columns.contactLimitPin1') },
+    { key: 'socketGroupPin1', label: t('socketInfo.columns.socketGroupPin1') },
+    { key: 'pogoPinPnPin1', label: t('socketInfo.columns.pogoPinPnPin1') },
+    { key: 'socketPnPin1', label: t('socketInfo.columns.socketPnPin1') },
+    { key: 'contactCountOver70Pin1', label: t('socketInfo.columns.contactCountOver70Pin1') },
+    { key: 'contactCountPin2', label: t('socketInfo.columns.contactCountPin2') },
+    { key: 'lifeCountPin2', label: t('socketInfo.columns.lifeCountPin2') },
+    { key: 'contactLimitPin2', label: t('socketInfo.columns.contactLimitPin2') },
+    { key: 'pogoPinPnPin2', label: t('socketInfo.columns.pogoPinPnPin2') },
+    { key: 'contactCountOver70Pin2', label: t('socketInfo.columns.contactCountOver70Pin2') },
+    { key: 'contactCountPcb', label: t('socketInfo.columns.contactCountPcb') },
+    { key: 'lifeCountPcb', label: t('socketInfo.columns.lifeCountPcb') },
+    { key: 'contactLimitPcb', label: t('socketInfo.columns.contactLimitPcb') },
+    { key: 'pnPcb', label: t('socketInfo.columns.pnPcb') },
+    { key: 'contactCountOver70Pcb', label: t('socketInfo.columns.contactCountOver70Pcb') },
+    { key: 'usedFlag', label: t('socketInfo.columns.usedFlag') },
   ];
 
   const columns = allColumns.filter(col => visibleColumns.includes(col.key));
@@ -370,8 +373,8 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">Socket Inventory</h2>
-          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">Monitor socket health and usage</p>
+          <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">{t('socketInfo.title')}</h2>
+          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">{t('socketInfo.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex rounded-xl border border-zinc-200 bg-zinc-50/50 p-1">
@@ -383,7 +386,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
               )}
             >
               <List className="h-3.5 w-3.5" />
-              LIST
+              {t('sharedTable.list')}
             </button>
             <button
               onClick={() => setViewMode('stats')}
@@ -393,7 +396,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
               )}
             >
               <BarChart2 className="h-3.5 w-3.5" />
-              STATS
+              {t('sharedTable.stats')}
             </button>
           </div>
           <button
@@ -401,7 +404,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
             className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-600 hover:bg-zinc-50 transition-all shadow-sm active:scale-95 whitespace-nowrap"
           >
             <Download className="h-4 w-4" />
-            <span>匯出 Excel</span>
+            <span>{t('sharedTable.exportExcel')}</span>
           </button>
           {isAdmin && (
             <button
@@ -409,7 +412,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
               className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
             >
               <Plus className="h-4 w-4" />
-              <span>ADD SOCKET</span>
+              <span>{t('socketInfo.addSocket')}</span>
             </button>
           )}
         </div>
@@ -429,7 +432,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
               }}
               className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors whitespace-nowrap"
             >
-              Clear
+              {t('sharedTable.clearFilters')}
             </button>
             <SavedViewsPanel
               views={savedViews}
@@ -451,31 +454,31 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
               values={filterSocketGroups}
               onChange={setFilterSocketGroups}
               options={uniqueSocketGroups}
-              placeholder="Socket Groups"
+              placeholder={t('socketInfo.filters.socketGroups')}
             />
             <MultiSelectDropdown
               values={filterToolsIds}
               onChange={setFilterToolsIds}
               options={uniqueToolsIds}
-              placeholder="Tools IDs"
+              placeholder={t('socketInfo.filters.toolsIds')}
             />
             <MultiSelectDropdown
               values={filterProjects}
               onChange={setFilterProjects}
               options={uniqueProjects}
-              placeholder="Projects"
+              placeholder={t('socketInfo.filters.projects')}
             />
             <MultiSelectDropdown
               values={filterStatuses}
               onChange={setFilterStatuses}
               options={uniqueStatuses}
-              placeholder="Statuses"
+              placeholder={t('socketInfo.filters.statuses')}
             />
             <MultiSelectDropdown
               values={filterPogoPinPns}
               onChange={setFilterPogoPinPns}
               options={uniquePogoPinPns}
-              placeholder="Pogo Pin P/Ns"
+              placeholder={t('socketInfo.filters.pogoPinPns')}
             />
             <div className="w-px h-4 bg-zinc-200 shrink-0 mx-1"></div>
             <MultiSelectDropdown
@@ -485,7 +488,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
                 setVisibleColumns(newVisible);
               }}
               options={allColumns.map(c => c.label)}
-              placeholder="Columns"
+              placeholder={t('sharedTable.columns')}
             />
           </div>
         </div>
@@ -494,7 +497,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
-            placeholder="Search sockets..."
+            placeholder={t('socketInfo.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-xl border border-zinc-100 bg-zinc-50/50 pl-10 pr-4 py-2 text-sm focus:border-brand-primary focus:bg-white focus:outline-none transition-all"
@@ -539,7 +542,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
                   </th>
                 ))}
                 {isAdmin && <th className="px-6 py-4 border-b border-zinc-100 text-right">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">Actions</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">{t('sharedTable.actions')}</span>
                 </th>}
               </tr>
             </thead>
@@ -592,14 +595,16 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
               {filteredSockets.length > displayCount && (
                 <tr>
                   <td colSpan={columns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
-                    Showing {displayCount} of {filteredSockets.length} sockets. Use filters to narrow down results, or <button onClick={() => setDisplayCount(prev => prev + 200)} className="text-brand-primary hover:underline font-medium not-italic">load 200 more</button>.
+                    {t('sharedTable.showingSubset', { displayCount, total: filteredSockets.length })}
+                    <button onClick={() => setDisplayCount(prev => prev + 200)} className="text-brand-primary hover:underline font-medium not-italic">{t('socketInfo.load200More')}</button>.
                   </td>
                 </tr>
               )}
               {displayCount > 100 && filteredSockets.length <= displayCount && (
                 <tr>
                   <td colSpan={columns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
-                    Showing all {filteredSockets.length} sockets. <button onClick={() => setDisplayCount(100)} className="text-brand-primary hover:underline font-medium not-italic">Show less</button>.
+                    {t('sharedTable.showingAll', { total: filteredSockets.length })}
+                    <button onClick={() => setDisplayCount(100)} className="text-brand-primary hover:underline font-medium not-italic">{t('sharedTable.showLess')}</button>.
                   </td>
                 </tr>
               )}
@@ -631,7 +636,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
                     <div className="bg-zinc-50/50 px-6 py-5 border-b border-zinc-100 flex items-center justify-between">
                       <h3 className="font-serif italic text-2xl text-zinc-900">{location}</h3>
                       <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Total Sockets</span>
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t('socketInfo.totalSockets')}</span>
                         <span className="text-xl font-bold text-brand-primary">{total}</span>
                       </div>
                     </div>
@@ -663,7 +668,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
             </div>
             {Object.keys(stats).length === 0 && (
               <div className="py-12 text-center text-zinc-500 bg-white rounded-3xl border border-zinc-100 border-dashed">
-                No statistics available (Facility must equal Location).
+                {t('socketInfo.noStatsFacilityLocation')}
               </div>
             )}
           </motion.div>
@@ -686,23 +691,23 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
                   <Trash2 className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900">Confirm Deletion</h3>
+                <h3 className="text-xl font-bold text-zinc-900">{t('sharedTable.confirmDeletion')}</h3>
               </div>
               <p className="mb-8 text-sm leading-relaxed text-zinc-600">
-                Are you sure you want to delete this socket record? This action cannot be undone and will be permanently removed from the system.
+                {t('socketInfo.deleteWarning')}
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setModal({ isOpen: false, id: null })}
                   className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100"
                 >
-                  Cancel
+                  {t('sharedTable.cancel')}
                 </button>
                 <button
                   onClick={handleDelete}
                   className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-red-700 shadow-lg shadow-red-600/20"
                 >
-                  Delete Record
+                  {t('sharedTable.deleteRecord')}
                 </button>
               </div>
             </motion.div>
@@ -724,17 +729,17 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                   <Check className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900">Save Changes</h3>
+                <h3 className="text-xl font-bold text-zinc-900">{t('sharedTable.saveChanges')}</h3>
               </div>
               <p className="mb-8 text-sm leading-relaxed text-zinc-600">
-                Are you sure you want to save these changes to the database?
+                {t('sharedTable.saveWarning')}
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setSaveModal({ isOpen: false, id: null, data: null })}
                   className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100"
                 >
-                  Cancel
+                  {t('sharedTable.cancel')}
                 </button>
                 <button
                   onClick={() => {
@@ -745,7 +750,7 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
                   }}
                   className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-emerald-700 shadow-lg shadow-emerald-600/20"
                 >
-                  Save Changes
+                  {t('sharedTable.saveChanges')}
                 </button>
               </div>
             </motion.div>

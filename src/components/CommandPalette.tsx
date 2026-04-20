@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, CornerDownLeft, Hash } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export interface Command {
   id: string;
@@ -18,12 +19,14 @@ interface CommandPaletteProps {
   onClose: () => void;
 }
 
-const GROUP_LABELS: Record<string, string> = {
-  page: '頁面',
-  data: '資料',
-};
-
 export default function CommandPalette({ commands, isOpen, onClose }: CommandPaletteProps) {
+  const { t } = useTranslation();
+  
+  const GROUP_LABELS: Record<string, string> = useMemo(() => ({
+    page: t('commandPalette.page'),
+    data: t('commandPalette.data'),
+  }), [t]);
+
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -110,7 +113,7 @@ export default function CommandPalette({ commands, isOpen, onClose }: CommandPal
                   ref={inputRef}
                   value={query}
                   onChange={e => setQuery(e.target.value)}
-                  placeholder="搜尋頁面或資料（Device、Tools ID…）"
+                  placeholder={t('commandPalette.searchPlaceholder')}
                   className="flex-1 text-sm text-zinc-900 placeholder-zinc-400 bg-transparent outline-none"
                 />
                 <kbd className="text-[10px] font-bold text-zinc-400 border border-zinc-200 rounded px-1.5 py-0.5">ESC</kbd>
@@ -118,7 +121,7 @@ export default function CommandPalette({ commands, isOpen, onClose }: CommandPal
 
               <ul ref={listRef} className="max-h-80 overflow-y-auto py-2">
                 {flat.length === 0 ? (
-                  <li className="px-4 py-8 text-center text-sm text-zinc-400">找不到相關頁面或資料</li>
+                  <li className="px-4 py-8 text-center text-sm text-zinc-400">{t('commandPalette.noResults')}</li>
                 ) : (
                   Object.entries({ page: groups.page, data: groups.data }).map(([groupKey, items]) => {
                     if (!items?.length) return null;
@@ -162,10 +165,10 @@ export default function CommandPalette({ commands, isOpen, onClose }: CommandPal
               </ul>
 
               <div className="border-t border-zinc-100 px-4 py-2 flex items-center gap-3 text-[11px] text-zinc-400">
-                <span><kbd className="border border-zinc-200 rounded px-1">↑↓</kbd> 導覽</span>
-                <span><kbd className="border border-zinc-200 rounded px-1">↵</kbd> 前往</span>
-                <span><kbd className="border border-zinc-200 rounded px-1">Esc</kbd> 關閉</span>
-                {query.trim() && groups.data && <span className="ml-auto">{groups.data.length} 筆資料結果</span>}
+                <span><kbd className="border border-zinc-200 rounded px-1">↑↓</kbd> {t('commandPalette.navigate')}</span>
+                <span><kbd className="border border-zinc-200 rounded px-1">↵</kbd> {t('commandPalette.go')}</span>
+                <span><kbd className="border border-zinc-200 rounded px-1">Esc</kbd> {t('commandPalette.close')}</span>
+                {query.trim() && groups.data && <span className="ml-auto">{t('commandPalette.resultsCount', { count: groups.data.length })}</span>}
               </div>
             </motion.div>
           </div>

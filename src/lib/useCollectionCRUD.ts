@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useToast } from '../contexts/ToastContext';
+import i18n from '../i18n/config';
 
 export function useCollectionCRUD<T extends Record<string, unknown>>(collectionName: string) {
   const { addToast } = useToast();
@@ -12,7 +13,7 @@ export function useCollectionCRUD<T extends Record<string, unknown>>(collectionN
       return true;
     } catch (err) {
       console.error(`Error adding to ${collectionName}:`, err);
-      addToast('新增失敗，請稍後再試。', 'error');
+      addToast(i18n.t('crud.addError'), 'error');
       return false;
     }
   }, [collectionName, addToast]);
@@ -23,7 +24,7 @@ export function useCollectionCRUD<T extends Record<string, unknown>>(collectionN
       return true;
     } catch (err) {
       console.error(`Error updating ${collectionName}:`, err);
-      addToast('更新失敗，請稍後再試。', 'error');
+      addToast(i18n.t('crud.updateError'), 'error');
       return false;
     }
   }, [collectionName, addToast]);
@@ -32,15 +33,15 @@ export function useCollectionCRUD<T extends Record<string, unknown>>(collectionN
     try {
       await deleteDoc(doc(db, collectionName, id));
       if (undoData) {
-        addToast('已刪除', 'success', {
-          label: '↩ 復原',
+        addToast(i18n.t('crud.deleted'), 'success', {
+          label: i18n.t('crud.undo'),
           onClick: () => addDoc(collection(db, collectionName), undoData),
         });
       }
       return true;
     } catch (err) {
       console.error(`Error deleting from ${collectionName}:`, err);
-      addToast('刪除失敗，請稍後再試。', 'error');
+      addToast(i18n.t('crud.deleteError'), 'error');
       return false;
     }
   }, [collectionName, addToast]);
