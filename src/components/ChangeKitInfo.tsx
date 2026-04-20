@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCollectionCRUD } from '../lib/useCollectionCRUD';
 import { Plus, Trash2, Edit2, Search, BarChart2, List, Check, X, Filter, ArrowUpDown, Download, Copy } from 'lucide-react';
 import { useExportExcel } from '../lib/useExportExcel';
@@ -135,7 +136,7 @@ const KitRow = React.memo(({
               <button
                 onClick={() => handleDuplicate(kit)}
                 className="p-2 rounded-lg hover:bg-white hover:shadow-sm text-zinc-400 hover:text-emerald-500 transition-all"
-                title="複製"
+                title={t('common.duplicate')}
               >
                 <Copy className="h-4 w-4" />
               </button>
@@ -154,6 +155,7 @@ const KitRow = React.memo(({
 });
 
 export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
+  const { t } = useTranslation();
   const { add, update, remove } = useCollectionCRUD<ChangeKit>('changeKits');
   const { addToast } = useToast();
   const { exportToExcel } = useExportExcel();
@@ -223,7 +225,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
   const handleDuplicate = async (item: ChangeKit) => {
     const { id: _id, ...data } = item as any;
     const ok = await add(data as Partial<ChangeKit>);
-    if (ok) addToast('記錄已複製', 'success');
+    if (ok) addToast(t('info.recordCopied'), 'success');
   };
 
   const handleBulkDelete = async () => {
@@ -348,7 +350,7 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
             className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-600 hover:bg-zinc-50 transition-all shadow-sm active:scale-95 whitespace-nowrap"
           >
             <Download className="h-4 w-4" />
-            <span>匯出 Excel</span>
+            <span>{t('common.exportExcel')}</span>
           </button>
           {isAdmin && (
             <button

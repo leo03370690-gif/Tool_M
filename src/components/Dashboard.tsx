@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, lazy, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
 import ErrorBoundary from './ErrorBoundary';
 import { User as FirebaseUser, signOut } from 'firebase/auth';
@@ -58,6 +59,7 @@ interface DashboardProps {
 type Tab = 'product' | 'socket' | 'change-kit' | 'pogo-pin' | 'life-time' | 'load-board' | 'required-pogo-pin' | 'users' | 'settings' | 'data-management' | 'audit-logs' | 'maintenance-history' | 'maintenance-record' | 'lb-history' | 'analytics';
 
 export default function Dashboard({ user, role, selectedFacility, onBackToFacility }: DashboardProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('product');
   const [tabHistory, setTabHistory] = useState<Tab[]>([]);
   const [maintenanceInitialData, setMaintenanceInitialData] = useState<any>(null);
@@ -428,10 +430,10 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
             <button
               onClick={() => setIsPaletteOpen(true)}
               className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors text-xs"
-              title="快速搜尋 (Ctrl+K)"
+              title={t('dashboard.searchTitle')}
             >
               <SearchIcon className="h-3.5 w-3.5" />
-              <span className="hidden lg:inline">搜尋功能</span>
+              <span className="hidden lg:inline">{t('dashboard.searchLabel')}</span>
               <kbd className="hidden lg:inline text-[10px] border border-zinc-300 rounded px-1">Ctrl+K</kbd>
             </button>
             <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-zinc-200 ring-2 ring-white shadow-sm overflow-hidden shrink-0">

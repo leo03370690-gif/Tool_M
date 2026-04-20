@@ -1,3 +1,5 @@
+import i18next from 'i18next';
+
 type Rule<T> = {
   field: keyof T;
   label: string;
@@ -18,11 +20,11 @@ export function validateForm<T>(
     const str = value != null ? String(value).trim() : '';
 
     if (rule.required && str === '') {
-      errors.push(`「${rule.label}」為必填欄位`);
+      errors.push(i18next.t('validate.required', { label: rule.label }));
       continue;
     }
     if (rule.minLength && str.length > 0 && str.length < rule.minLength) {
-      errors.push(`「${rule.label}」最少需 ${rule.minLength} 個字元`);
+      errors.push(i18next.t('validate.minLength', { label: rule.label, min: rule.minLength }));
     }
     if (rule.pattern && str.length > 0 && !rule.pattern.regex.test(str)) {
       errors.push(rule.pattern.message);

@@ -2,9 +2,11 @@ import { useCallback } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useToast } from '../contexts/ToastContext';
+import { useTranslation } from 'react-i18next';
 
 export function useCollectionCRUD<T extends Record<string, unknown>>(collectionName: string) {
   const { addToast } = useToast();
+  const { t } = useTranslation();
 
   const add = useCallback(async (data: Partial<T>): Promise<boolean> => {
     try {
@@ -12,10 +14,10 @@ export function useCollectionCRUD<T extends Record<string, unknown>>(collectionN
       return true;
     } catch (err) {
       console.error(`Error adding to ${collectionName}:`, err);
-      addToast('新增失敗，請稍後再試。', 'error');
+      addToast(t('crud.addFailed'), 'error');
       return false;
     }
-  }, [collectionName, addToast]);
+  }, [collectionName, addToast, t]);
 
   const update = useCallback(async (id: string, data: Partial<T>): Promise<boolean> => {
     try {
@@ -23,27 +25,27 @@ export function useCollectionCRUD<T extends Record<string, unknown>>(collectionN
       return true;
     } catch (err) {
       console.error(`Error updating ${collectionName}:`, err);
-      addToast('更新失敗，請稍後再試。', 'error');
+      addToast(t('crud.updateFailed'), 'error');
       return false;
     }
-  }, [collectionName, addToast]);
+  }, [collectionName, addToast, t]);
 
   const remove = useCallback(async (id: string, undoData?: Partial<T>): Promise<boolean> => {
     try {
       await deleteDoc(doc(db, collectionName, id));
       if (undoData) {
-        addToast('已刪除', 'success', {
-          label: '↩ 復原',
+        addToast(t('crud.deleted'), 'success', {
+          label: t('common.undo'),
           onClick: () => addDoc(collection(db, collectionName), undoData),
         });
       }
       return true;
     } catch (err) {
       console.error(`Error deleting from ${collectionName}:`, err);
-      addToast('刪除失敗，請稍後再試。', 'error');
+      addToast(t('crud.deleteFailed'), 'error');
       return false;
     }
-  }, [collectionName, addToast]);
+  }, [collectionName, addToast, t]);
 
   return { add, update, remove };
 }

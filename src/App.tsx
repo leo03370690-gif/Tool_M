@@ -8,6 +8,7 @@ import Dashboard from './components/Dashboard';
 import FacilitySelection from './components/FacilitySelection';
 import { Loader2, AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -42,6 +43,7 @@ async function claimRole(user: User): Promise<string | null> {
 }
 
 export default function App() {
+  const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,7 +126,7 @@ export default function App() {
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-5 w-5" />
                 <p className="text-sm font-bold tracking-wide">
-                  系統配額已達上限（每日寫入額度已滿）。部分功能（如匯入、刪除、修改）將暫時無法使用。
+                  {t('app.quotaWarning')}
                 </p>
               </div>
               <button

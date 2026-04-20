@@ -4,8 +4,10 @@ import { auth } from '../firebase';
 import { cn } from '../lib/utils';
 import { LogIn, Loader2, ShieldCheck, Lock, User, Mail, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 export default function Login() {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,11 +29,11 @@ export default function Login() {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
       if (err.code === 'resource-exhausted' || err.message?.includes('quota')) {
-        setError('系統寫入配額已滿，暫時無法處理新用戶登入。請稍後再試。');
+        setError(t('login.quotaFull'));
       } else if (err.code === 'auth/invalid-credential') {
-        setError('帳號或密碼錯誤。如果您有設定自訂 Email，請使用 Email 登入。');
+        setError(t('login.authError'));
       } else {
-        setError('登入失敗：' + (err.message || '未知錯誤'));
+        setError(t('login.failed') + (err.message || t('error.unknownError')));
       }
       console.error('Login error:', err);
     } finally {

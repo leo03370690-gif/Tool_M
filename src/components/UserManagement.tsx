@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { db, auth } from '../firebase';
 import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { Plus, Trash2, UserPlus, Shield, User as UserIcon, Users, Edit2, Check, X, Loader2, Mail, List, LayoutGrid, Filter, Search } from 'lucide-react';
@@ -71,6 +72,7 @@ interface UserData {
 }
 
 export default function UserManagement() {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
   const [newUsername, setNewUsername] = useState('');
@@ -257,7 +259,7 @@ export default function UserManagement() {
               className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-500/10 transition-all"
             />
             <p className="text-[10px] text-zinc-500 ml-1">
-              若填寫，該用戶必須使用此 Email 登入。若留白，則可直接使用 Username 登入。
+              {t('users.emailHint')}
             </p>
           </div>
           <div className="space-y-1.5">

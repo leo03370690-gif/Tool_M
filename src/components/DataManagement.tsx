@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from '../firebase';
 import { collection, getDocs, writeBatch, doc, query, getCountFromServer, where } from 'firebase/firestore';
@@ -73,6 +74,7 @@ interface PreviewData {
 }
 
 export default function DataManagement() {
+  const { t } = useTranslation();
   const [maintenanceTarget, setMaintenanceTarget] = useState<string>('all');
   const [maintenanceAction, setMaintenanceAction] = useState<'clear_all' | 'clear_facility'>('clear_all');
   const [deleteFacility, setDeleteFacility] = useState<string>('');
@@ -419,7 +421,7 @@ export default function DataManagement() {
           }
         }
       }
-      setPreview(previewResult.length > 0 ? previewResult : [{ collectionId: 'none', collectionLabel: '無匹配資料', rows: [], totalRows: 0 }]);
+      setPreview(previewResult.length > 0 ? previewResult : [{ collectionId: 'none', collectionLabel: t('data.noMatch'), rows: [], totalRows: 0 }]);
     } catch (err) {
       console.error('Preview error:', err);
     } finally {
@@ -585,7 +587,7 @@ export default function DataManagement() {
           let errorMessage = getFirestoreErrorMessage(err);
           
           if (err.code === 'resource-exhausted' || err.message?.includes('quota')) {
-            errorMessage = "Firestore 寫入配額已用盡 (每日 20,000 次)。請等待 24 小時後重置，或聯繫管理員升級方案。";
+            errorMessage = t('data.quotaExceeded');
           }
 
           setModal({
@@ -993,8 +995,8 @@ export default function DataManagement() {
           <div className="w-full max-w-4xl max-h-[85vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-zinc-100">
               <div>
-                <h3 className="text-xl font-bold text-zinc-900">匯入預覽</h3>
-                <p className="text-sm text-zinc-500 mt-1">確認欄位對應正確後再執行匯入</p>
+                <h3 className="text-xl font-bold text-zinc-900">{t('data.importPreview')}</h3>
+                <p className="text-sm text-zinc-500 mt-1">{t('data.importPreviewDesc')}</p>
               </div>
               <button onClick={() => setPreview(null)} className="p-2 rounded-full hover:bg-zinc-100 text-zinc-400">
                 <X className="h-5 w-5" />
@@ -1005,10 +1007,10 @@ export default function DataManagement() {
                 <div key={p.collectionId}>
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-bold text-zinc-800">{p.collectionLabel}</h4>
-                    <span className="text-xs text-zinc-400 bg-zinc-100 px-2 py-1 rounded-full">共 {p.totalRows} 筆</span>
+                    <span className="text-xs text-zinc-400 bg-zinc-100 px-2 py-1 rounded-full">{t('data.totalRows', { count: p.totalRows })}</span>
                   </div>
                   {p.rows.length === 0 ? (
-                    <div className="py-4 text-center text-zinc-400 text-sm border border-dashed rounded-xl">未偵測到有效資料列</div>
+                    <div className="py-4 text-center text-zinc-400 text-sm border border-dashed rounded-xl">{t('data.noValidRows')}</div>
                   ) : (
                     <div className="overflow-x-auto rounded-xl border border-zinc-200">
                       <table className="text-xs w-full">
@@ -1030,7 +1032,7 @@ export default function DataManagement() {
                           {p.totalRows > 10 && (
                             <tr>
                               <td colSpan={Object.keys(p.rows[0]).length} className="px-3 py-2 text-center text-zinc-400 italic">
-                                … 另有 {p.totalRows - 10} 筆未顯示
+                                {t('data.moreRows', { count: p.totalRows - 10 })}
                               </td>
                             </tr>
                           )}
@@ -1043,7 +1045,7 @@ export default function DataManagement() {
             </div>
             <div className="flex justify-end gap-3 p-6 border-t border-zinc-100">
               <button onClick={() => setPreview(null)} className="px-6 py-2.5 text-sm font-bold text-zinc-500 hover:bg-zinc-100 rounded-xl transition-colors">
-                取消
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => {
@@ -1052,7 +1054,7 @@ export default function DataManagement() {
                 }}
                 className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-zinc-900 hover:bg-zinc-700 rounded-xl transition-colors shadow-lg"
               >
-                確認匯入
+                {t('data.confirmImport')}
               </button>
             </div>
           </div>
