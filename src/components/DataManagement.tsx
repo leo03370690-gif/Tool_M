@@ -332,15 +332,23 @@ export default function DataManagement() {
       const mappedRow: any = {};
       let hasData = false;
       
+      // Fields that Firestore rules validate with isValidNumberOrString — keep as numbers
+      const numericFields = new Set([
+        'contactCountPin1', 'lifeCountPin1', 'contactLimitPin1',
+        'contactCountPin2', 'lifeCountPin2', 'contactLimitPin2',
+        'contactCountPcb', 'lifeCountPcb', 'contactLimitPcb',
+        'qty', 'pogoPinQty',
+      ]);
+
       for (let j = 0; j < headers.length; j++) {
         const cellValue = row[j];
         const finalKey = headerMapping[j];
-        
+
         if (finalKey) {
           if (cellValue !== "" && cellValue !== null && cellValue !== undefined) {
             hasData = true;
           }
-          if (typeof cellValue === 'number') {
+          if (typeof cellValue === 'number' && numericFields.has(finalKey)) {
             mappedRow[finalKey] = cellValue;
           } else {
             mappedRow[finalKey] = String(cellValue ?? "");
