@@ -250,5 +250,146 @@
       "pinPn": "Part Number",
       "qty": "Quantity"
     }
+  },
+  "loadBoardInfo": {
+    "title": "Load Board Info",
+    "subtitle": "Track and manage load board inventory",
+    "list": "LIST",
+    "stats": "STATS",
+    "addRecord": "ADD LB",
+    "searchPlaceholder": "Search load boards...",
+    "emptySearch": "Showing {{count}} of {{total}} load boards. Use filters to narrow down results, or ",
+    "loadMore": "load 200 more",
+    "showLess": "Show less",
+    "showingAll": "Showing all {{total}} load boards. ",
+    "noStats": "No statistics available.",
+    "totalBoards": "Total Boards",
+    "confirmDelete": {
+      "title": "Confirm Deletion",
+      "message": "Are you sure you want to delete this load board record? This action cannot be undone and will be permanently removed from the system.",
+      "button": "Delete Record"
+    },
+    "maintenance": {
+      "title": "Load Board Options",
+      "message": "What would you like to do for <1>{{name}}</1>?",
+      "viewHistory": "View History",
+      "addRecord": "Add Record"
+    },
+    "columns": {
+      "facility": "Facility",
+      "projectName": "Project Name",
+      "lbName": "LB Name",
+      "lbGroup": "LB Group",
+      "location": "Location",
+      "insertion": "Insertion",
+      "availableQty": "Available Qty",
+      "remark": "Remark",
+      "sendBackDate": "Send Back Date",
+      "targetReturnDate": "Target Return Date"
+    },
+    "filters": {
+      "projects": "Projects",
+      "lbNames": "LB Names",
+      "lbGroups": "LB Groups",
+      "locations": "Locations",
+      "columns": "Columns"
+    }
+  },
+  "lifeTimeInfo": {
+    "title": "Life Time Info",
+    "subtitle": "Manage socket and pogo pin life cycle data",
+    "addRecord": "ADD RECORD",
+    "searchPlaceholder": "Search records...",
+    "emptySearch": "Showing {{count}} of {{total}} records. Use filters to narrow down results, or ",
+    "loadMore": "load 200 more",
+    "showLess": "Show less",
+    "showingAll": "Showing all {{total}} records. ",
+    "confirmDelete": {
+      "title": "Confirm Deletion",
+      "message": "Are you sure you want to delete this life time record? This action cannot be undone and will be permanently removed from the system.",
+      "button": "Delete Record"
+    },
+    "columns": {
+      "facility": "Facility",
+      "socketGroup": "Socket group",
+      "pogoPin1Pn": "Pogo pin 1 P/N",
+      "pogoPinQty": "Pogo pin Q'ty",
+      "lifeTime": "Life time",
+      "loadBoardGroup": "Load board group",
+      "remark": "Remark"
+    },
+    "filters": {
+      "socketGroups": "Socket Groups",
+      "pogoPin1Pns": "Pogo Pin 1 P/Ns",
+      "lbGroups": "LB Groups",
+      "columns": "Columns"
+    }
+  },
+  "requiredPogoPin": {
+    "title": "Required pogo pin(FCST)",
+    "subtitle": "Calculate required pogo pins based on forecast quantity",
+    "input": "INPUT",
+    "summary": "SUMMARY",
+    "detailed": "DETAILED",
+    "totalRequired": "Total Required",
+    "totalOnHand": "Total On Hand",
+    "totalShortage": "Total Shortage",
+    "shortageItems": "Shortage Items",
+    "addRow": "Add Row",
+    "importExcel": "Import Excel",
+    "clearAll": "Clear All",
+    "excelFormat": "Excel format: Col A = PartNo, Col B = Qty (starting from row 2)",
+    "noData": "No data.",
+    "noDataAdmin": "Add a row or import an Excel file.",
+    "enterPartNo": "Enter PartNo",
+    "qty": "Qty",
+    "remark": "Remark",
+    "pogoPin1Need": "Pogo pin1 need",
+    "pogoPin2Need": "Pogo pin2 need",
+    "pogoPin3Need": "Pogo pin3 need",
+    "pogoPin4Need": "Pogo pin4 need",
+    "partNo": "PartNo",
+    "top5Shortages": "Top 5 Shortages",
+    "totalRequiredPins": "Total Required Pogo Pins",
+    "aggregatedQty": "Aggregated quantities across all input rows",
+    "searchPogoPin": "Search pogo pin...",
+    "noMatchingPins": "No matching pogo pins found.",
+    "noDataToSummarize": "No data to summarize. Please add items in the Input list.",
+    "stockLevel": "Stock Level",
+    "finalRequired": "Final Required",
+    "details": "Details",
+    "detailedAnalysis": "Detailed Pogo Pin Analysis",
+    "detailedAnalysisSubtitle": "Comprehensive breakdown of pogo pin requirements by device and insertion",
+    "exportDetailed": "EXPORT EXCEL",
+    "expandAll": "Expand All",
+    "collapseAll": "Collapse All",
+    "noDeviceDetails": "No device details found",
+    "moreDetails": "+ {{count}} more details...",
+    "clearAllTitle": "Clear All Data",
+    "clearAllMessage": "Are you sure you want to clear all imported and manually entered data? This action cannot be undone.",
+    "columns": {
+      "pinName": "Pogo pin name",
+      "final": "Required Pin Qty",
+      "required": "Calculation Pin Qty",
+      "onHand": "On hand Qty",
+      "nickName": "Nickname",
+      "device": "Device",
+      "insertion": "Insertion",
+      "site": "Site number",
+      "fcst": "FCST",
+      "lifetime": "Lifetime",
+      "reqPinQtyInOneSocket": "Required pin qty in one socket"
+    },
+    "filters": {
+      "pogoPins": "Pogo Pins",
+      "nicknames": "Nicknames",
+      "devices": "Devices",
+      "insertions": "Insertions",
+      "reqQty": "Req. Qty",
+      "all": "All",
+      "gt0": "QTY > 0",
+      "lte0": "QTY <= 0",
+      "columns": "Columns"
+    }
   }
 }

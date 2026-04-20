@@ -4,6 +4,7 @@ import { Plus, Trash2, Edit2, Check, X, Search, BarChart2, List, Filter, ArrowUp
 import { useExportExcel } from '../lib/useExportExcel';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation, Trans } from 'react-i18next';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
@@ -171,6 +172,7 @@ export default function LoadBoardInfo({
   onAddMaintenanceRecord: (data: any) => void,
   onViewHistory?: (lbNo: string) => void
 }) {
+  const { t } = useTranslation();
   const { add, update, remove } = useCollectionCRUD<LoadBoard>('loadBoards');
   const { addToast } = useToast();
   const { exportToExcel } = useExportExcel();
@@ -329,16 +331,16 @@ export default function LoadBoardInfo({
   }, [loadBoards, debouncedSearchTerm, filterProjectNames, filterLBNames, filterLBGroups, filterLocations, sortConfig]);
 
   const allColumns = [
-    { key: 'facility', label: 'Facility' },
-    { key: 'projectName', label: 'Project Name' },
-    { key: 'lbName', label: 'LB Name' },
-    { key: 'lbGroup', label: 'LB Group' },
-    { key: 'location', label: 'Location' },
-    { key: 'insertion', label: 'Insertion' },
-    { key: 'availableQty', label: 'Available Qty' },
-    { key: 'remark', label: 'Remark' },
-    { key: 'sendBackDate', label: 'Send Back Date' },
-    { key: 'targetReturnDate', label: 'Target Return Date' },
+    { key: 'facility', label: t('loadBoardInfo.columns.facility') },
+    { key: 'projectName', label: t('loadBoardInfo.columns.projectName') },
+    { key: 'lbName', label: t('loadBoardInfo.columns.lbName') },
+    { key: 'lbGroup', label: t('loadBoardInfo.columns.lbGroup') },
+    { key: 'location', label: t('loadBoardInfo.columns.location') },
+    { key: 'insertion', label: t('loadBoardInfo.columns.insertion') },
+    { key: 'availableQty', label: t('loadBoardInfo.columns.availableQty') },
+    { key: 'remark', label: t('loadBoardInfo.columns.remark') },
+    { key: 'sendBackDate', label: t('loadBoardInfo.columns.sendBackDate') },
+    { key: 'targetReturnDate', label: t('loadBoardInfo.columns.targetReturnDate') },
   ];
 
   const columns = allColumns.filter(col => visibleColumns.includes(col.key));
@@ -355,8 +357,8 @@ export default function LoadBoardInfo({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">Load Board Info</h2>
-          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">Track and manage load board inventory</p>
+          <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">{t('loadBoardInfo.title')}</h2>
+          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">{t('loadBoardInfo.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex rounded-xl border border-zinc-200 bg-zinc-50/50 p-1">
@@ -368,7 +370,7 @@ export default function LoadBoardInfo({
               )}
             >
               <List className="h-3.5 w-3.5" />
-              LIST
+              {t('loadBoardInfo.list')}
             </button>
             <button
               onClick={() => setViewMode('stats')}
@@ -378,7 +380,7 @@ export default function LoadBoardInfo({
               )}
             >
               <BarChart2 className="h-3.5 w-3.5" />
-              STATS
+              {t('loadBoardInfo.stats')}
             </button>
           </div>
           <button
@@ -386,7 +388,7 @@ export default function LoadBoardInfo({
             className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-600 hover:bg-zinc-50 transition-all shadow-sm active:scale-95 whitespace-nowrap"
           >
             <Download className="h-4 w-4" />
-            <span>匯出 Excel</span>
+            <span>{t('sharedTable.exportExcel')}</span>
           </button>
           {isAdmin && (
             <button
@@ -394,7 +396,7 @@ export default function LoadBoardInfo({
               className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
             >
               <Plus className="h-4 w-4" />
-              <span>ADD LB</span>
+              <span>{t('loadBoardInfo.addRecord')}</span>
             </button>
           )}
         </div>
@@ -413,7 +415,7 @@ export default function LoadBoardInfo({
               }}
               className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors whitespace-nowrap"
             >
-              Clear
+              {t('sharedTable.clear')}
             </button>
             <SavedViewsPanel
               views={savedViews}
@@ -434,25 +436,25 @@ export default function LoadBoardInfo({
               values={filterProjectNames}
               onChange={setFilterProjectNames}
               options={uniqueProjectNames}
-              placeholder="Projects"
+              placeholder={t('loadBoardInfo.filters.projects')}
             />
             <MultiSelectDropdown
               values={filterLBNames}
               onChange={setFilterLBNames}
               options={uniqueLBNames}
-              placeholder="LB Names"
+              placeholder={t('loadBoardInfo.filters.lbNames')}
             />
             <MultiSelectDropdown
               values={filterLBGroups}
               onChange={setFilterLBGroups}
               options={uniqueLBGroups}
-              placeholder="LB Groups"
+              placeholder={t('loadBoardInfo.filters.lbGroups')}
             />
             <MultiSelectDropdown
               values={filterLocations}
               onChange={setFilterLocations}
               options={uniqueLocations}
-              placeholder="Locations"
+              placeholder={t('loadBoardInfo.filters.locations')}
             />
             <div className="w-px h-4 bg-zinc-200 shrink-0 mx-1"></div>
             <MultiSelectDropdown
@@ -462,7 +464,7 @@ export default function LoadBoardInfo({
                 setVisibleColumns(newVisible);
               }}
               options={allColumns.map(c => c.label)}
-              placeholder="Columns"
+              placeholder={t('loadBoardInfo.filters.columns')}
             />
           </div>
         </div>
@@ -471,7 +473,7 @@ export default function LoadBoardInfo({
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
-            placeholder="Search load boards..."
+            placeholder={t('loadBoardInfo.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-xl border border-zinc-100 bg-zinc-50/50 pl-10 pr-4 py-2 text-sm focus:border-brand-primary focus:bg-white focus:outline-none transition-all"
@@ -516,7 +518,7 @@ export default function LoadBoardInfo({
                       </th>
                     ))}
                     {isAdmin && <th className="px-6 py-4 border-b border-zinc-100 text-right">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">Actions</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 font-sans">{t('sharedTable.actions')}</span>
                     </th>}
                   </tr>
                 </thead>
@@ -568,14 +570,14 @@ export default function LoadBoardInfo({
                   {filteredLoadBoards.length > displayCount && (
                     <tr>
                       <td colSpan={columns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
-                        Showing {displayCount} of {filteredLoadBoards.length} load boards. Use filters to narrow down results, or <button onClick={() => setDisplayCount(prev => prev + 200)} className="text-brand-primary hover:underline font-medium not-italic">load 200 more</button>.
+                        {t('loadBoardInfo.emptySearch', { count: displayCount, total: filteredLoadBoards.length })}<button onClick={() => setDisplayCount(prev => prev + 200)} className="text-brand-primary hover:underline font-medium not-italic">{t('loadBoardInfo.loadMore')}</button>.
                       </td>
                     </tr>
                   )}
                   {displayCount > 100 && filteredLoadBoards.length <= displayCount && (
                     <tr>
                       <td colSpan={columns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-zinc-400 italic">
-                        Showing all {filteredLoadBoards.length} load boards. <button onClick={() => setDisplayCount(100)} className="text-brand-primary hover:underline font-medium not-italic">Show less</button>.
+                        {t('loadBoardInfo.showingAll', { total: filteredLoadBoards.length })}<button onClick={() => setDisplayCount(100)} className="text-brand-primary hover:underline font-medium not-italic">{t('loadBoardInfo.showLess')}</button>.
                       </td>
                     </tr>
                   )}
@@ -607,7 +609,7 @@ export default function LoadBoardInfo({
                     <div className="bg-zinc-50/50 px-6 py-5 border-b border-zinc-100 flex items-center justify-between">
                       <h3 className="font-serif italic text-2xl text-zinc-900">{facility}</h3>
                       <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Total Boards</span>
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t('loadBoardInfo.totalBoards')}</span>
                         <span className="text-xl font-bold text-brand-primary">{total}</span>
                       </div>
                     </div>
@@ -639,7 +641,7 @@ export default function LoadBoardInfo({
             </div>
             {Object.keys(stats).length === 0 && (
               <div className="py-12 text-center text-zinc-500 bg-white rounded-3xl border border-zinc-100 border-dashed">
-                No statistics available.
+                {t('loadBoardInfo.noStats')}
               </div>
             )}
           </motion.div>
@@ -662,23 +664,23 @@ export default function LoadBoardInfo({
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
                   <Trash2 className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900">Confirm Deletion</h3>
+                <h3 className="text-xl font-bold text-zinc-900">{t('loadBoardInfo.confirmDelete.title')}</h3>
               </div>
               <p className="mb-8 text-sm leading-relaxed text-zinc-600">
-                Are you sure you want to delete this load board record? This action cannot be undone and will be permanently removed from the system.
+                {t('loadBoardInfo.confirmDelete.message')}
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setModal({ isOpen: false, id: null })}
                   className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100"
                 >
-                  Cancel
+                  {t('sharedTable.cancel')}
                 </button>
                 <button
                   onClick={handleDelete}
                   className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-red-700 shadow-lg shadow-red-600/20"
                 >
-                  Delete Record
+                  {t('loadBoardInfo.confirmDelete.button')}
                 </button>
               </div>
             </motion.div>
@@ -700,17 +702,19 @@ export default function LoadBoardInfo({
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-brand-primary">
                   <BarChart2 className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900">Load Board Options</h3>
+                <h3 className="text-xl font-bold text-zinc-900">{t('loadBoardInfo.maintenance.title')}</h3>
               </div>
               <p className="mb-8 text-sm leading-relaxed text-zinc-600">
-                What would you like to do for <span className="font-bold text-brand-primary">{maintenanceModal.lb?.lbName}</span>?
+                <Trans i18nKey="loadBoardInfo.maintenance.message" values={{ name: maintenanceModal.lb?.lbName }}>
+                  What would you like to do for <span className="font-bold text-brand-primary">{{name: maintenanceModal.lb?.lbName}}</span>?
+                </Trans>
               </p>
               <div className="flex flex-col sm:flex-row justify-end gap-3">
                 <button
                   onClick={() => setMaintenanceModal({ isOpen: false, lb: null })}
                   className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100 sm:mr-auto"
                 >
-                  Cancel
+                  {t('sharedTable.cancel')}
                 </button>
                 {onViewHistory && (
                   <button
@@ -722,7 +726,7 @@ export default function LoadBoardInfo({
                     }}
                     className="flex items-center justify-center gap-2 rounded-xl bg-zinc-100 text-zinc-700 px-6 py-2.5 text-sm font-bold transition-all hover:bg-zinc-200"
                   >
-                    View History
+                    {t('loadBoardInfo.maintenance.viewHistory')}
                   </button>
                 )}
                 <button
@@ -738,7 +742,7 @@ export default function LoadBoardInfo({
                   }}
                   className="flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-zinc-800 shadow-lg shadow-black/10"
                 >
-                  Add Record
+                  {t('loadBoardInfo.maintenance.addRecord')}
                 </button>
               </div>
             </motion.div>
@@ -760,17 +764,17 @@ export default function LoadBoardInfo({
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                   <Check className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900">Save Changes</h3>
+                <h3 className="text-xl font-bold text-zinc-900">{t('sharedTable.saveChanges')}</h3>
               </div>
               <p className="mb-8 text-sm leading-relaxed text-zinc-600">
-                Are you sure you want to save these changes to the database?
+                {t('sharedTable.confirmSave')}
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setSaveModal({ isOpen: false, id: null, data: null })}
                   className="rounded-xl px-6 py-2.5 text-sm font-bold text-zinc-500 transition-colors hover:bg-zinc-100"
                 >
-                  Cancel
+                  {t('sharedTable.cancel')}
                 </button>
                 <button
                   onClick={() => {
@@ -781,7 +785,7 @@ export default function LoadBoardInfo({
                   }}
                   className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-emerald-700 shadow-lg shadow-emerald-600/20"
                 >
-                  Save Changes
+                  {t('sharedTable.saveChanges')}
                 </button>
               </div>
             </motion.div>

@@ -248,7 +248,148 @@
     "columns": {
       "facility": "Facility",
       "pinPn": "Part Number",
-      "qty": "Quantity"
+      "qty": "数量"
+    }
+  },
+  "loadBoardInfo": {
+    "title": "ロードボード情報",
+    "subtitle": "ロードボードの在庫を追跡・管理",
+    "list": "リスト",
+    "stats": "統計",
+    "addRecord": "ボード追加",
+    "searchPlaceholder": "ロードボードを検索...",
+    "emptySearch": "{{total}} 件中 {{count}} 件のロードボードを表示中。フィルタを使用するか、",
+    "loadMore": "さらに200件読み込む",
+    "showLess": "表示を減らす",
+    "showingAll": "全 {{total}} 件のロードボードを表示中。",
+    "noStats": "利用可能な統計情報がありません。",
+    "totalBoards": "合計ボード数",
+    "confirmDelete": {
+      "title": "削除の確認",
+      "message": "このロードボード記録を削除してもよろしいですか？この操作は元に戻すことはできず、システムから完全に削除されます。",
+      "button": "記録を削除"
+    },
+    "maintenance": {
+      "title": "ロードボードオプション",
+      "message": "<1>{{name}}</1> に対してどのような操作を行いますか？",
+      "viewHistory": "履歴を表示",
+      "addRecord": "記録を追加"
+    },
+    "columns": {
+      "facility": "施設",
+      "projectName": "プロジェクト名",
+      "lbName": "ボード名",
+      "lbGroup": "ボードグループ",
+      "location": "場所",
+      "insertion": "挿入",
+      "availableQty": "利用可能数量",
+      "remark": "備考",
+      "sendBackDate": "返送日",
+      "targetReturnDate": "返却予定日"
+    },
+    "filters": {
+      "projects": "プロジェクト",
+      "lbNames": "ボード名",
+      "lbGroups": "ボードグループ",
+      "locations": "場所",
+      "columns": "列"
+    }
+  },
+  "lifeTimeInfo": {
+    "title": "寿命情報",
+    "subtitle": "ソケットとポゴピンのライフサイクルデータを管理",
+    "addRecord": "記録追加",
+    "searchPlaceholder": "記録を検索...",
+    "emptySearch": "{{total}} 件中 {{count}} 件の記録を表示中。フィルタを使用するか、",
+    "loadMore": "さらに200件読み込む",
+    "showLess": "表示を減らす",
+    "showingAll": "全 {{total}} 件の記録を表示中。",
+    "confirmDelete": {
+      "title": "削除の確認",
+      "message": "この寿命記録を削除してもよろしいですか？この操作は元に戻すことはできず、システムから完全に削除されます。",
+      "button": "記録を削除"
+    },
+    "columns": {
+      "facility": "施設",
+      "socketGroup": "ソケットグループ",
+      "pogoPin1Pn": "ポゴピン1部品番号",
+      "pogoPinQty": "ポゴピン数量",
+      "lifeTime": "寿命",
+      "loadBoardGroup": "ロードボードグループ",
+      "remark": "備考"
+    },
+    "filters": {
+      "socketGroups": "ソケットグループ",
+      "pogoPin1Pns": "ポゴピン1部品番号",
+      "lbGroups": "ロードボードグループ",
+      "columns": "列"
+    }
+  },
+  "requiredPogoPin": {
+    "title": "必要ポゴピン(FCST)",
+    "subtitle": "予測数量に基づき必要なポゴピンを計算",
+    "input": "入力",
+    "summary": "概要",
+    "detailed": "詳細",
+    "totalRequired": "合計必要数",
+    "totalOnHand": "手持ち合計",
+    "totalShortage": "合計不足数",
+    "shortageItems": "不足アイテム数",
+    "addRow": "行を追加",
+    "importExcel": "Excel インポート",
+    "clearAll": "すべてクリア",
+    "excelFormat": "Excel形式：A列 = 部品番号, B列 = 数量（2行目から開始）",
+    "noData": "データがありません。",
+    "noDataAdmin": "行を追加するか、Excelファイルをインポートしてください。",
+    "enterPartNo": "部品番号を入力",
+    "qty": "数量",
+    "remark": "備考",
+    "pogoPin1Need": "ポゴピン1必要数",
+    "pogoPin2Need": "ポゴピン2必要数",
+    "pogoPin3Need": "ポゴピン3必要数",
+    "pogoPin4Need": "ポゴピン4必要数",
+    "partNo": "部品番号",
+    "top5Shortages": "不足トップ5",
+    "totalRequiredPins": "必要ポゴピン合計",
+    "aggregatedQty": "すべての入力行の集計数量",
+    "searchPogoPin": "ポゴピンを検索...",
+    "noMatchingPins": "一致するポゴピンが見つかりません。",
+    "noDataToSummarize": "要約するデータがありません。入力リストに項目を追加してください。",
+    "stockLevel": "在庫レベル",
+    "finalRequired": "最終必要数",
+    "details": "詳細",
+    "detailedAnalysis": "ポゴピン詳細分析",
+    "detailedAnalysisSubtitle": "デバイスおよび挿入ごとのポゴピン要件の包括的な内訳",
+    "exportDetailed": "EXCEL へのエクスポート",
+    "expandAll": "すべて展開",
+    "collapseAll": "すべて折りたたむ",
+    "noDeviceDetails": "デバイスの詳細が見つかりません",
+    "moreDetails": "さらに {{count}} 件の詳細...",
+    "clearAllTitle": "すべてのデータをクリア",
+    "clearAllMessage": "インポートおよび手動入力されたすべてのデータをクリアしてもよろしいですか？この操作は元に戻せません。",
+    "columns": {
+      "pinName": "ポゴピン名",
+      "final": "必要ピン数量",
+      "required": "計算ピン数量",
+      "onHand": "手持ち数量",
+      "nickName": "ニックネーム",
+      "device": "デバイス",
+      "insertion": "挿入",
+      "site": "サイト番号",
+      "fcst": "FCST",
+      "lifetime": "寿命",
+      "reqPinQtyInOneSocket": "1ソケットあたりの必要ピン数量"
+    },
+    "filters": {
+      "pogoPins": "ポゴピン",
+      "nicknames": "ニックネーム",
+      "devices": "デバイス",
+      "insertions": "挿入",
+      "reqQty": "必要数量",
+      "all": "すべて",
+      "gt0": "数量 > 0",
+      "lte0": "数量 <= 0",
+      "columns": "列"
     }
   }
 }

@@ -248,7 +248,148 @@
     "columns": {
       "facility": "Facility",
       "pinPn": "Part Number",
-      "qty": "Quantity"
+      "qty": "數量"
+    }
+  },
+  "loadBoardInfo": {
+    "title": "負載板資訊",
+    "subtitle": "追蹤與管理負載板庫存",
+    "list": "列表",
+    "stats": "統計",
+    "addRecord": "新增負載板",
+    "searchPlaceholder": "搜尋負載板...",
+    "emptySearch": "顯示 {{count}} / {{total}} 筆負載板。使用過濾器來縮小範圍，或",
+    "loadMore": "載入更多 200 筆",
+    "showLess": "顯示較少",
+    "showingAll": "顯示全部 {{total}} 筆負載板。",
+    "noStats": "無可用統計資料。",
+    "totalBoards": "總板數",
+    "confirmDelete": {
+      "title": "確認刪除",
+      "message": "您確定要刪除這筆負載板記錄嗎？此動作無法復原，並會從系統中永久移除。",
+      "button": "刪除記錄"
+    },
+    "maintenance": {
+      "title": "負載板選項",
+      "message": "您想要對 <1>{{name}}</1> 執行什麼操作？",
+      "viewHistory": "查看歷史記錄",
+      "addRecord": "新增維護記錄"
+    },
+    "columns": {
+      "facility": "廠區",
+      "projectName": "專案名稱",
+      "lbName": "負載板名稱",
+      "lbGroup": "負載板群組",
+      "location": "位置",
+      "insertion": "插入",
+      "availableQty": "可用數量",
+      "remark": "備註",
+      "sendBackDate": "送回日期",
+      "targetReturnDate": "預計歸還日期"
+    },
+    "filters": {
+      "projects": "專案",
+      "lbNames": "負載板名稱",
+      "lbGroups": "負載板群組",
+      "locations": "位置",
+      "columns": "顯示欄位"
+    }
+  },
+  "lifeTimeInfo": {
+    "title": "壽命管理",
+    "subtitle": "管理 Socket 與 Pogo Pin 的生命週期數據",
+    "addRecord": "新增記錄",
+    "searchPlaceholder": "搜尋記錄...",
+    "emptySearch": "顯示 {{count}} / {{total}} 筆記錄。使用過濾器來縮小範圍，或",
+    "loadMore": "載入更多 200 筆",
+    "showLess": "顯示較少",
+    "showingAll": "顯示全部 {{total}} 筆記錄。",
+    "confirmDelete": {
+      "title": "確認刪除",
+      "message": "您確定要刪除這筆壽命記錄嗎？此動作無法復原，並會從系統中永久移除。",
+      "button": "刪除記錄"
+    },
+    "columns": {
+      "facility": "廠區",
+      "socketGroup": "Socket 群組",
+      "pogoPin1Pn": "探針 1 料號",
+      "pogoPinQty": "探針數量",
+      "lifeTime": "壽命",
+      "loadBoardGroup": "負載板群組",
+      "remark": "備註"
+    },
+    "filters": {
+      "socketGroups": "Socket 群組",
+      "pogoPin1Pns": "探針 1 料號",
+      "lbGroups": "負載板群組",
+      "columns": "顯示欄位"
+    }
+  },
+  "requiredPogoPin": {
+    "title": "預估所需探針",
+    "subtitle": "根據預測數量計算所需的探針 (FCST)",
+    "input": "輸入清單",
+    "summary": "總結",
+    "detailed": "詳細分析",
+    "totalRequired": "總需求量",
+    "totalOnHand": "現有總庫存",
+    "totalShortage": "總短缺量",
+    "shortageItems": "短缺項目數",
+    "addRow": "新增列",
+    "importExcel": "匯入 Excel",
+    "clearAll": "清除全部",
+    "excelFormat": "Excel 格式：A欄 = 料號, B欄 = 數量 (從第二行開始)",
+    "noData": "尚無資料。",
+    "noDataAdmin": "請新增一列或匯入 Excel 檔案。",
+    "enterPartNo": "輸入料號",
+    "qty": "數量",
+    "remark": "備註",
+    "pogoPin1Need": "探針 1 需求",
+    "pogoPin2Need": "探針 2 需求",
+    "pogoPin3Need": "探針 3 需求",
+    "pogoPin4Need": "探針 4 需求",
+    "partNo": "料號",
+    "top5Shortages": "前 5 大短缺",
+    "totalRequiredPins": "總需探針數量",
+    "aggregatedQty": "整合所有輸入資料的總計",
+    "searchPogoPin": "搜尋探針...",
+    "noMatchingPins": "找不到符合的探針。",
+    "noDataToSummarize": "沒有可總結的資料，請在輸入清單中加入項目。",
+    "stockLevel": "庫存水位",
+    "finalRequired": "最終需求量",
+    "details": "詳細資料",
+    "detailedAnalysis": "探針詳細分析",
+    "detailedAnalysisSubtitle": "依裝置與插入狀態全面拆解探針需求",
+    "exportDetailed": "匯出 EXCEL",
+    "expandAll": "全部展開",
+    "collapseAll": "全部折疊",
+    "noDeviceDetails": "找不到裝置詳情",
+    "moreDetails": "+ 還有 {{count}} 筆詳情...",
+    "clearAllTitle": "清除所有資料",
+    "clearAllMessage": "您確定要清除所有匯入與手動輸入的資料嗎？此動作無法復原。",
+    "columns": {
+      "pinName": "探針名稱",
+      "final": "實際需購量",
+      "required": "計算需求量",
+      "onHand": "現有庫存量",
+      "nickName": "別名",
+      "device": "裝置",
+      "insertion": "插入",
+      "site": "Site 編號",
+      "fcst": "FCST (預測數量)",
+      "lifetime": "壽命",
+      "reqPinQtyInOneSocket": "單一 Socket 所需針數"
+    },
+    "filters": {
+      "pogoPins": "探針",
+      "nicknames": "別名",
+      "devices": "裝置",
+      "insertions": "插入",
+      "reqQty": "需求量",
+      "all": "全部",
+      "gt0": "數量 > 0",
+      "lte0": "數量 <= 0",
+      "columns": "顯示欄位"
     }
   }
 }
