@@ -731,6 +731,91 @@ export default function RequiredPogoPin({ selectedFacility, isAdmin }: { selecte
                 </tr>
               </thead>
               <tbody>
+                {filteredDetailedSummaryData.length === 0 ? (
+                  <tr>
+                    <td colSpan={visibleColumns.length} className="px-4 py-8 text-center text-zinc-500 border border-zinc-300">
+                      {t('requiredPogoPin.noMatchingPins')}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredDetailedSummaryData.map((pinGroup, pinIndex) => {
+                    const isExpanded = expandedPins[pinGroup.pinName];
+                    const detailsToShow = isExpanded ? pinGroup.details : (pinGroup.details.length > 0 ? [pinGroup.details[0]] : []);
+                    const hasDetails = pinGroup.details.length > 0;
+
+                    if (!hasDetails) {
+                      const remainingCols = visibleColumns.filter(c => !['pinName', 'final', 'required', 'onHand'].includes(c)).length;
+                      return (
+                        <tr key={pinGroup.pinName} className="hover:bg-zinc-50 group">
+                          {visibleColumns.includes('pinName') && (
+                            <td className="border border-zinc-300 px-3 py-2 text-left font-medium sticky left-0 bg-white group-hover:bg-zinc-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors">
+                              <div className="flex items-center gap-2 pl-6">{pinGroup.pinName}</div>
+                            </td>
+                          )}
+                          {visibleColumns.includes('final') && (
+                            <td className="border border-zinc-300 px-3 py-2 text-right font-bold text-red-600">{pinGroup.final.toLocaleString()}</td>
+                          )}
+                          {visibleColumns.includes('required') && (
+                            <td className="border border-zinc-300 px-3 py-2 text-right">{pinGroup.required.toLocaleString()}</td>
+                          )}
+                          {visibleColumns.includes('onHand') && (
+                            <td className="border border-zinc-300 px-3 py-2 text-right">{pinGroup.onHand.toLocaleString()}</td>
+                          )}
+                          {remainingCols > 0 && (
+                            <td className="border border-zinc-300 px-3 py-2 text-center text-zinc-400" colSpan={remainingCols}>{t('requiredPogoPin.noDeviceDetails')}</td>
+                          )}
+                        </tr>
+                      );
+                    }
+
+                    return detailsToShow.map((detail, detailIndex) => {
+                      const isFirstPin = detailIndex === 0;
+
+                      let isFirstNickName = false;
+                      let nickNameRowSpan = 1;
+                      if (isExpanded) {
+                        if (detailIndex === 0 || pinGroup.details[detailIndex - 1].nickName !== detail.nickName) {
+                          isFirstNickName = true;
+                          let count = 1;
+                          for (let i = detailIndex + 1; i < pinGroup.details.length; i++) {
+                            if (pinGroup.details[i].nickName === detail.nickName) count++;
+                            else break;
+                          }
+                          nickNameRowSpan = count;
+                        }
+                      } else {
+                        isFirstNickName = true;
+                      }
+
+                      let isFirstDevice = false;
+                      let deviceRowSpan = 1;
+                      if (isExpanded) {
+                        if (detailIndex === 0 || pinGroup.details[detailIndex - 1].device !== detail.device || pinGroup.details[detailIndex - 1].nickName !== detail.nickName) {
+                          isFirstDevice = true;
+                          let count = 1;
+                          for (let i = detailIndex + 1; i < pinGroup.details.length; i++) {
+                            if (pinGroup.details[i].device === detail.device && pinGroup.details[i].nickName === detail.nickName) count++;
+                            else break;
+                          }
+                          deviceRowSpan = count;
+                        }
+                      } else {
+                        isFirstDevice = true;
+                      }
+
+                      return (
+                        <tr key={`${pinGroup.pinName}-${detailIndex}`} className={cn("hover:bg-zinc-50/50 group", !isExpanded && "bg-zinc-50/30")}>
+                          {isFirstPin && (
+                            <>
+                              {visibleColumns.includes('pinName') && (
+                                <td className="border border-zinc-300 px-3 py-2 align-top text-left font-bold bg-yellow-100/50 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" rowSpan={isExpanded ? pinGroup.details.length : 1}>
+                                  <button
+                                    onClick={() => togglePin(pinGroup.pinName)}
+                                    className="flex items-center gap-2 hover:text-brand-primary transition-colors w-full text-left"
+                                  >
+                                    {isExpanded ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+                                    {pinGroup.pinName}
+                                  </button>
                                 </td>
                               )}
                               {visibleColumns.includes('final') && (
