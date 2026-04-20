@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth, firebaseConfig } from '../firebase';
-import { collection, onSnapshot, setDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, getAuth, signOut, setPersistence, inMemoryPersistence } from 'firebase/auth';
-import { initializeApp, deleteApp } from 'firebase/app';
+import { db, auth } from '../firebase';
+import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { Plus, Trash2, UserPlus, Shield, User as UserIcon, Users, Edit2, Check, X, Loader2, Mail, List, LayoutGrid, Filter, Search } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { logAuditAction } from '../lib/audit';
@@ -109,45 +107,30 @@ export default function UserManagement() {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    let secondaryApp;
     try {
       const email = newEmail.trim() || `${newUsername.trim().toLowerCase().replace(/\s+/g, '.')}@tooling.local`;
-      
-      secondaryApp = initializeApp(firebaseConfig, 'SecondaryApp');
-      const secondaryAuth = getAuth(secondaryApp);
-      await setPersistence(secondaryAuth, inMemoryPersistence);
-      
-      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, newPassword);
-      await signOut(secondaryAuth);
-      
-      const path = `users/${userCredential.user.uid}`;
-      try {
-        await setDoc(doc(db, 'users', userCredential.user.uid), {
-          username: newUsername,
-          email: email,
-          role: newRole,
-          createdAt: new Date().toISOString()
-        });
-      } catch (err) {
-        handleFirestoreError(err, OperationType.WRITE, path);
+      const idToken = await auth.currentUser!.getIdToken();
+      const resp = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: newUsername, email, password: newPassword, role: newRole }),
+      });
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        if (resp.status === 409) {
+          addToast('A user with this email already exists.', 'error');
+        } else {
+          addToast('Failed to add user: ' + (body.error || resp.statusText), 'error');
+        }
+        return;
       }
-      
       await logAuditAction('Add User', `Added user ${newUsername} with role ${newRole}`);
       setNewUsername('');
       setNewEmail('');
       setNewPassword('');
     } catch (err: any) {
-      console.error(err);
-      if (err.code === 'auth/email-already-in-use') {
-        addToast('A user with this email/username already exists.', 'error');
-      } else {
-        addToast('Failed to add user: ' + err.message, 'error');
-      }
+      addToast('Failed to add user: ' + err.message, 'error');
     } finally {
-      if (secondaryApp) {
-        await deleteApp(secondaryApp).catch(console.error);
-      }
       setLoading(false);
     }
   };
@@ -175,10 +158,15 @@ export default function UserManagement() {
     if (!deleteModal.id) return;
     setDeletingId(deleteModal.id);
     try {
-      await deleteDoc(doc(db, 'users', deleteModal.id));
+      const idToken = await auth.currentUser!.getIdToken();
+      const resp = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: deleteModal.id }),
+      });
+      if (!resp.ok) throw new Error('Delete failed');
       setDeleteModal({ isOpen: false, id: null, username: null });
     } catch (error) {
-      console.error("Error deleting user:", error);
       addToast('Failed to delete user. Please try again.', 'error');
     } finally {
       setDeletingId(null);
@@ -186,14 +174,19 @@ export default function UserManagement() {
   };
 
   const handleUpdateRole = async (userId: string) => {
-    const path = `users/${userId}`;
     try {
       const userToUpdate = users.find(u => u.id === userId);
-      await updateDoc(doc(db, 'users', userId), { role: editRole });
+      const idToken = await auth.currentUser!.getIdToken();
+      const resp = await fetch('/api/set-role', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: userId, role: editRole }),
+      });
+      if (!resp.ok) throw new Error('Update failed');
       await logAuditAction('Update User Role', `Updated role for user ${userToUpdate?.username} to ${editRole}`);
       setEditingUserId(null);
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, path);
+      addToast('Failed to update role. Please try again.', 'error');
     }
   };
 

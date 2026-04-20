@@ -9,12 +9,8 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && (
-        ('email' in request.auth.token && request.auth.token.email == "leo03370690@gmail.com") ||
-        ('email' in request.auth.token && request.auth.token.email == "leo.lo@tooling.local") ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin')
-      );
+      // Role is set server-side via Firebase Admin SDK custom claims — never trusted from client
+      return isAuthenticated() && request.auth.token.get('role', '') == 'admin';
     }
 
     function isOwner(userId) {
@@ -160,7 +156,8 @@ service cloud.firestore {
     // ===============================================================
     match /users/{userId} {
       allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
-      allow create: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data);
+      // create/update/delete only via Admin SDK (server-side API routes) which bypasses rules
+      allow create: if isAdmin() && isValidUser(request.resource.data);
       allow update: if isAdmin() && isValidUser(request.resource.data);
       allow delete: if isAdmin();
     }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import FacilitySelection from './components/FacilitySelection';
@@ -15,7 +15,31 @@ import { ToastProvider } from './contexts/ToastContext';
 import OfflineBanner from './components/OfflineBanner';
 import ToastContainer from './components/ui/ToastContainer';
 
-const ADMIN_EMAILS = ['leo03370690@gmail.com', 'leo.lo@tooling.local'];
+async function claimRole(user: User): Promise<string | null> {
+  try {
+    // First check existing claims (no network round-trip)
+    let tokenResult = await user.getIdTokenResult();
+    const existingRole = tokenResult.claims.role as string | undefined;
+    if (existingRole) return existingRole;
+
+    // No claim yet — ask server to assign one (server checks OWNER_EMAILS env var)
+    const idToken = await user.getIdToken();
+    const resp = await fetch('/api/set-role', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    if (resp.ok) {
+      // Force-refresh to get new claims embedded in token
+      tokenResult = await user.getIdTokenResult(true);
+      return (tokenResult.claims.role as string) || null;
+    }
+  } catch (e) {
+    console.error('claimRole error:', e);
+  }
+  return null;
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -29,55 +53,41 @@ export default function App() {
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      
+
       if (unsubscribeDoc) {
         unsubscribeDoc();
         unsubscribeDoc = null;
       }
 
       if (currentUser) {
-        // Listen to the user document for real-time role updates
-        unsubscribeDoc = onSnapshot(doc(db, 'users', currentUser.uid), async (docSnap) => {
-          if (docSnap.exists()) {
-            setRole(docSnap.data().role);
-          } else {
-            // Check if it's a hardcoded admin email
-            const userEmail = currentUser.email?.toLowerCase();
-            const isHardcodedAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail) : false;
+        // Role comes from JWT custom claims — no hardcoded emails in frontend
+        const initialRole = await claimRole(currentUser);
+        setRole(initialRole);
+        setLoading(false);
 
-            if (isHardcodedAdmin) {
-              setRole('admin');
-              try {
-                await setDoc(doc(db, 'users', currentUser.uid), {
-                  username: userEmail === 'leo03370690@gmail.com' ? 'Owner' : 'Leo.Lo',
-                  role: 'admin',
-                  createdAt: new Date().toISOString()
-                });
-              } catch (e: any) {
-                console.error("Error creating admin doc:", e);
-                if (e.code === 'resource-exhausted' || e.message?.includes('quota')) {
-                  setQuotaExceeded(true);
-                }
-              }
-            } else {
-              setRole(null);
+        // Watch user doc: if admin changes this user's role, force-refresh token
+        unsubscribeDoc = onSnapshot(
+          doc(db, 'users', currentUser.uid),
+          async (snap) => {
+            if (!snap.exists()) return;
+            const docRole = snap.data()?.role as string | undefined;
+            if (!docRole) return;
+
+            const tokenResult = await currentUser.getIdTokenResult(false);
+            const tokenRole = tokenResult.claims.role as string | undefined;
+
+            if (docRole !== tokenRole) {
+              // Role was changed by admin — refresh token to pick up new claim
+              const refreshed = await currentUser.getIdTokenResult(true);
+              setRole((refreshed.claims.role as string) || null);
+            }
+          },
+          (error: any) => {
+            if (error.code === 'resource-exhausted' || error.message?.includes('quota')) {
+              setQuotaExceeded(true);
             }
           }
-          setLoading(false);
-        }, (error: any) => {
-          console.error("Error listening to user doc:", error);
-          if (error.code === 'resource-exhausted' || error.message?.includes('quota')) {
-            setQuotaExceeded(true);
-          }
-          // Fallback for hardcoded admin emails if snapshot fails
-          const userEmail = currentUser.email?.toLowerCase();
-          if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
-            setRole('admin');
-          } else {
-            setRole(null);
-          }
-          setLoading(false);
-        });
+        );
       } else {
         setRole(null);
         setLoading(false);
@@ -117,7 +127,7 @@ export default function App() {
                   系統配額已達上限（每日寫入額度已滿）。部分功能（如匯入、刪除、修改）將暫時無法使用。
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setQuotaExceeded(false)}
                 className="p-1 hover:bg-white/20 rounded-full transition-colors"
               >
@@ -130,36 +140,32 @@ export default function App() {
         <ToastContainer />
         <Router>
           <Routes>
-            <Route 
-              path="/login" 
-              element={user ? <Navigate to="/" /> : <Login />} 
+            <Route
+              path="/login"
+              element={user ? <Navigate to="/" /> : <Login />}
             />
-            <Route 
-              path="/*" 
+            <Route
+              path="/*"
               element={
                 user ? (
                   selectedFacility ? (
                     <DataProvider>
-                      <Dashboard 
-                        user={user} 
-                        role={role} 
-                        selectedFacility={selectedFacility} 
+                      <Dashboard
+                        user={user}
+                        role={role}
+                        selectedFacility={selectedFacility}
                         onBackToFacility={() => {
                           Object.keys(window.sessionStorage).forEach(key => {
-                            if (key.includes('_filter')) {
-                              window.sessionStorage.removeItem(key);
-                            }
+                            if (key.includes('_filter')) window.sessionStorage.removeItem(key);
                           });
                           setSelectedFacility(null);
-                        }} 
+                        }}
                       />
                     </DataProvider>
                   ) : (
                     <FacilitySelection onSelect={(facility) => {
                       Object.keys(window.sessionStorage).forEach(key => {
-                        if (key.includes('_filter')) {
-                          window.sessionStorage.removeItem(key);
-                        }
+                        if (key.includes('_filter')) window.sessionStorage.removeItem(key);
                       });
                       setSelectedFacility(facility);
                     }} />
@@ -167,7 +173,7 @@ export default function App() {
                 ) : (
                   <Navigate to="/login" />
                 )
-              } 
+              }
             />
           </Routes>
         </Router>
