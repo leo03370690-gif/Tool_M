@@ -4,8 +4,10 @@ import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 
 import { KeyRound, ShieldCheck, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ThemeSwitcher } from './ThemeSwitcher';
+import { useTranslation } from 'react-i18next';
 
 export default function Settings() {
+  const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -19,18 +21,18 @@ export default function Settings() {
     setSuccess(false);
 
     if (newPassword !== confirmPassword) {
-      setError('New passwords do not match');
+      setError(t('settings.passwordsMismatch'));
       return;
     }
 
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError(t('settings.passwordMinLength'));
       return;
     }
 
     const user = auth.currentUser;
     if (!user || !user.email) {
-      setError('User not found');
+      setError(t('settings.userNotFound'));
       return;
     }
 
@@ -47,11 +49,11 @@ export default function Settings() {
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Incorrect current password');
+        setError(t('settings.incorrectPassword'));
       } else if (err.code === 'auth/requires-recent-login') {
-        setError('Please log out and log back in to change your password');
+        setError(t('settings.requireRelogin'));
       } else {
-        setError(err.message || 'Failed to change password');
+        setError(err.message || t('settings.changeFailed'));
       }
     } finally {
       setLoading(false);
@@ -72,8 +74,8 @@ export default function Settings() {
             <KeyRound className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-zinc-900">Security Settings</h3>
-            <p className="text-sm text-zinc-500">Manage your account password and security</p>
+            <h3 className="text-xl font-bold text-zinc-900">{t('settings.title')}</h3>
+            <p className="text-sm text-zinc-500">{t('settings.subtitle')}</p>
           </div>
         </div>
 
@@ -95,14 +97,14 @@ export default function Settings() {
             className="mb-6 flex items-center gap-3 rounded-xl bg-green-50 p-4 text-sm text-green-600 border border-green-100"
           >
             <CheckCircle2 className="h-5 w-5 shrink-0" />
-            <p className="font-medium">Password successfully updated!</p>
+            <p className="font-medium">{t('settings.success')}</p>
           </motion.div>
         )}
 
         <form onSubmit={handleChangePassword} className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-              Current Password
+              {t('settings.currentPassword')}
             </label>
             <input
               type="password"
@@ -110,14 +112,14 @@ export default function Settings() {
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-500/10 transition-all"
-              placeholder="Enter current password"
+              placeholder={t('settings.enterCurrent')}
             />
           </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-                New Password
+                {t('settings.newPassword')}
               </label>
               <input
                 type="password"
@@ -125,13 +127,13 @@ export default function Settings() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-500/10 transition-all"
-                placeholder="Min. 6 characters"
+                placeholder={t('settings.min6chars')}
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-                Confirm New Password
+                {t('settings.confirmPassword')}
               </label>
               <input
                 type="password"
@@ -139,7 +141,7 @@ export default function Settings() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-500/10 transition-all"
-                placeholder="Confirm new password"
+                placeholder={t('settings.enterConfirm')}
               />
             </div>
           </div>
@@ -151,7 +153,7 @@ export default function Settings() {
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-6 py-3 text-sm font-bold text-white transition-all hover:opacity-90 disabled:opacity-50 shadow-sm"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-              {loading ? 'Updating Password...' : 'Update Password'}
+              {loading ? t('settings.updating') : t('settings.update')}
             </button>
           </div>
         </form>

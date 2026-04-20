@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef, Suspense, lazy, useMemo } from 'rea
 import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
 import ErrorBoundary from './ErrorBoundary';
-import { User as FirebaseUser, signOut } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard,
@@ -50,7 +52,7 @@ const AnalyticsDashboard = lazy(() => import('./AnalyticsDashboard'));
 const CommandPalette = lazy(() => import('./CommandPalette'));
 
 interface DashboardProps {
-  user: FirebaseUser;
+  user: any;
   role: string | null;
   selectedFacility: string;
   onBackToFacility: () => void;
@@ -61,6 +63,7 @@ type Tab = 'product' | 'socket' | 'change-kit' | 'pogo-pin' | 'life-time' | 'loa
 export default function Dashboard({ user, role, selectedFacility, onBackToFacility }: DashboardProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('product');
+  const { t } = useTranslation();
   const [tabHistory, setTabHistory] = useState<Tab[]>([]);
   const [maintenanceInitialData, setMaintenanceInitialData] = useState<any>(null);
   const [selectedLBNo, setSelectedLBNo] = useState<string | null>(null);
@@ -76,20 +79,20 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
   };
 
   const allMenuItems = [
-    { id: 'analytics', label: 'Analytics', icon: BarChart2 },
-    { id: 'product', label: 'Product Info', icon: Box },
-    { id: 'socket', label: 'Socket Info', icon: Cpu },
-    { id: 'change-kit', label: 'Change Kit', icon: Wrench },
-    { id: 'pogo-pin', label: 'Pogo Pin', icon: Database },
-    { id: 'life-time', label: 'Life Time', icon: Clock },
-    { id: 'load-board', label: 'Load Board', icon: Layers },
-    { id: 'maintenance-history', label: 'Maintenance History', icon: History },
-    { id: 'required-pogo-pin', label: 'Required Pogo Pin', icon: Calculator },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'analytics', label: t('sidebar.analytics'), icon: BarChart2 },
+    { id: 'product', label: t('sidebar.productInfo'), icon: Box },
+    { id: 'socket', label: t('sidebar.socketInfo'), icon: Cpu },
+    { id: 'change-kit', label: t('sidebar.changeKit'), icon: Wrench },
+    { id: 'pogo-pin', label: t('sidebar.pogoPin'), icon: Database },
+    { id: 'life-time', label: t('sidebar.lifeTime'), icon: Clock },
+    { id: 'load-board', label: t('sidebar.loadBoard'), icon: Layers },
+    { id: 'maintenance-history', label: t('sidebar.maintenanceHistory'), icon: History },
+    { id: 'required-pogo-pin', label: t('sidebar.requiredPogoPin'), icon: Calculator },
+    { id: 'settings', label: t('sidebar.settings'), icon: Settings },
     ...(isAdmin ? [
-      { id: 'data-management', label: 'Data Management', icon: DatabaseBackup },
-      { id: 'users', label: 'User Management', icon: Users },
-      { id: 'audit-logs', label: 'Audit Logs', icon: Clock },
+      { id: 'data-management', label: t('sidebar.dataManagement'), icon: DatabaseBackup },
+      { id: 'users', label: t('sidebar.userManagement'), icon: Users },
+      { id: 'audit-logs', label: t('sidebar.auditLogs'), icon: Clock },
     ] : []),
   ];
 
@@ -368,7 +371,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
             )}
           >
             <LogOut className="h-5 w-5 shrink-0" />
-            {isSidebarOpen && <span>Logout</span>}
+            {isSidebarOpen && <span>{t('sidebar.logout')}</span>}
           </button>
         </div>
       </motion.aside>
@@ -404,7 +407,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
                       }
                     }}
                     className="flex items-center justify-center p-1 hover:bg-zinc-100 rounded-lg transition-colors text-zinc-500 hover:text-zinc-900"
-                    title="Go Back"
+                    title={t('common.goBack')}
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </button>
@@ -415,18 +418,19 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
             <div className="h-6 w-px bg-zinc-200 mx-1 md:mx-2" />
             <div className="flex items-center gap-2">
               <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-zinc-700 bg-zinc-100 border border-zinc-200/80 px-2 md:px-3 py-1 md:py-1.5 rounded-full truncate max-w-[80px] md:max-w-none">
-                <span className="hidden md:inline">Facility: </span>{selectedFacility}
+                <span className="hidden md:inline">{t('common.facility')}: </span>{selectedFacility}
               </span>
               <button 
                 onClick={onBackToFacility}
                 className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 transition-colors px-2 md:px-3 py-1 md:py-1.5 bg-white border border-zinc-200 rounded-full shadow-sm hover:bg-zinc-50"
               >
-                Change
+                {t('common.change')}
               </button>
             </div>
           </div>
 
           <div className="flex items-center gap-4 md:gap-6">
+            <LanguageSwitcher className="hidden md:block" />
             <button
               onClick={() => setIsPaletteOpen(true)}
               className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors text-xs"
