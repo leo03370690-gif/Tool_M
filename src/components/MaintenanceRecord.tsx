@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useToast } from '../contexts/ToastContext';
 import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { Check, X, Loader2, ChevronDown } from 'lucide-react';
@@ -20,6 +21,7 @@ const SITES = [...Array.from({ length: 20 }, (_, i) => `Site ${i + 1}`), 'Other'
 const STATUS_OPTIONS = ['Done', 'On-going', 'Pending', 'Returned'];
 
 export default function MaintenanceRecord({ initialData, onCancel, onSuccess, userEmail }: MaintenanceRecordProps) {
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedSites, setSelectedSites] = useState<string[]>(['Site 1']);
   const [otherSiteReason, setOtherSiteReason] = useState('');
@@ -66,7 +68,7 @@ export default function MaintenanceRecord({ initialData, onCancel, onSuccess, us
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedSites.length === 0) {
-      alert("Please select at least one site.");
+      addToast('Please select at least one site.', 'warning');
       return;
     }
     
@@ -74,7 +76,7 @@ export default function MaintenanceRecord({ initialData, onCancel, onSuccess, us
     const missingIssue = selectedSites.find(s => !siteIssues[s] || siteIssues[s].trim() === '');
     if (missingIssue) {
       const siteName = missingIssue === 'Other' ? (otherSiteReason || 'Other site') : missingIssue;
-      alert(`Please enter an issue description for ${siteName}.`);
+      addToast(`Please enter an issue description for ${siteName}.`, 'warning');
       return;
     }
     
@@ -106,7 +108,7 @@ export default function MaintenanceRecord({ initialData, onCancel, onSuccess, us
       onSuccess();
     } catch (error) {
       console.error('Error adding maintenance record:', error);
-      alert('Failed to save record. Please try again.');
+      addToast('Failed to save record. Please try again.', 'error');
     } finally {
       setLoading(false);
     }

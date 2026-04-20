@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { useCollectionCRUD } from '../lib/useCollectionCRUD';
 import { Plus, Trash2, Edit2, Search, Check, X, List, LayoutGrid, Filter, ArrowUpDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,6 +8,12 @@ import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { useData } from '../contexts/DataContext';
 import { useDebounce } from '../lib/useDebounce';
+import { useBulkSelect } from '../lib/useBulkSelect';
+import BulkActionBar from './ui/BulkActionBar';
+import { validateForm } from '../lib/validate';
+import { useToast } from '../contexts/ToastContext';
+import { useSavedViews } from '../lib/useSavedViews';
+import SavedViewsPanel from './ui/SavedViewsPanel';
 
 interface PogoPin {
   id: string;
@@ -129,28 +134,32 @@ const PinCard = React.memo(({
   );
 });
 
-const PinRow = React.memo(({ 
-  pin, 
-  idx, 
-  columns, 
+const PinRow = React.memo(({
+  pin,
+  idx,
+  columns,
   visibleColumns,
-  isAdmin, 
-  editingId, 
-  setEditingId, 
-  handleUpdate, 
+  isAdmin,
+  editingId,
+  setEditingId,
+  handleUpdate,
   setModal,
-  setSaveModal
-}: { 
-  pin: PogoPin, 
-  idx: number, 
-  columns: any[], 
+  setSaveModal,
+  isSelected,
+  onToggle
+}: {
+  pin: PogoPin,
+  idx: number,
+  columns: any[],
   visibleColumns: string[],
-  isAdmin: boolean, 
-  editingId: string | null, 
-  setEditingId: (id: string | null) => void, 
-  handleUpdate: (id: string, data: any) => void, 
+  isAdmin: boolean,
+  editingId: string | null,
+  setEditingId: (id: string | null) => void,
+  handleUpdate: (id: string, data: any) => void,
   setModal: (modal: any) => void,
-  setSaveModal: (modal: any) => void
+  setSaveModal: (modal: any) => void,
+  isSelected: boolean,
+  onToggle: () => void
 }) => {
   const [localData, setLocalData] = useState<Partial<PogoPin>>(pin);
   
@@ -167,8 +176,18 @@ const PinRow = React.memo(({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx * 0.01, 0.5) }}
-      className="group hover:bg-zinc-50/80 transition-colors"
+      className={cn("group hover:bg-zinc-50/80 transition-colors", isSelected && "bg-blue-50/60")}
     >
+      {isAdmin && (
+        <td className="px-4 py-4 w-10" onClick={e => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+            checked={isSelected}
+            onChange={onToggle}
+          />
+        </td>
+      )}
       {columns.filter(col => visibleColumns.includes(col.key)).map((col, i) => (
         <td key={col.key} className={cn("px-6 py-4 text-zinc-600 whitespace-nowrap", i === 0 && visibleColumns[0] === col.key && "sticky left-0 bg-white group-hover:bg-zinc-50/80 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors")}>
           {isEditing ? (
@@ -219,6 +238,10 @@ const PinRow = React.memo(({
 });
 
 export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
+  const { add, update, remove } = useCollectionCRUD<PogoPin>('pogoPins');
+  const { addToast } = useToast();
+  const { selectedIds, toggleOne, toggleAll, clearSelection, isAllSelected } = useBulkSelect();
+  const { views: savedViews, saveView, deleteView } = useSavedViews('pogoPinInfo_savedViews');
   const { pogoPins: allPins } = useData();
   
   const pins = useMemo(() => {
@@ -236,6 +259,8 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [viewMode, setViewMode] = usePersistentState<'card' | 'table'>('pogoPinInfo_viewMode', 'card');
   const [filterPinPns, setFilterPinPns] = usePersistentState<string[]>('pogoPinInfo_filterPinPns', []);
+
+  useEffect(() => { clearSelection(); }, [debouncedSearchTerm, filterPinPns, selectedFacility]);
   const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('pogoPinInfo_visibleColumns', ['facility', 'pinPn', 'qty']);
   const [displayCount, setDisplayCount] = useState(100);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
@@ -251,40 +276,31 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
   const [saveModal, setSaveModal] = useState<{isOpen: boolean, id: string | null, data: any | null}>({ isOpen: false, id: null, data: null });
 
   const handleAdd = async () => {
-    if (!newPin.pinPn) return;
-    try {
-      await addDoc(collection(db, 'pogoPins'), {
-        ...newPin,
-        facility: selectedFacility === 'ALL' ? (newPin.facility || '') : selectedFacility
-      });
-      setNewPin({});
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error adding pogo pin record:', err);
-      alert('Failed to add record. Please try again.');
-    }
+    const ok = validateForm<PogoPin>(newPin, [
+      { field: 'facility', label: 'Facility', required: true },
+      { field: 'pinPn', label: 'Part Number', required: true },
+    ], addToast);
+    if (!ok) return;
+    const success = await add({ ...newPin, facility: selectedFacility === 'ALL' ? (newPin.facility || '') : selectedFacility });
+    if (success) { setNewPin({}); setEditingId(null); }
   };
 
   const handleUpdate = async (id: string, data: Partial<PogoPin>) => {
-    try {
-      await updateDoc(doc(db, 'pogoPins', id), data);
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error updating pogo pin record:', err);
-      alert('Failed to update record. Please try again.');
-    }
+    const ok = await update(id, data);
+    if (ok) setEditingId(null);
   };
 
   const handleDelete = async () => {
     if (modal.id) {
-      try {
-        await deleteDoc(doc(db, 'pogoPins', modal.id));
-        setModal({ isOpen: false, id: null });
-      } catch (err) {
-        console.error('Error deleting pogo pin record:', err);
-        alert('Failed to delete record. Please try again.');
-      }
+      const ok = await remove(modal.id);
+      if (ok) setModal({ isOpen: false, id: null });
     }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    await Promise.all(ids.map(id => remove(id)));
+    clearSelection();
   };
 
   const filteredForPinPns = React.useMemo(() => {
@@ -336,6 +352,15 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
             >
               Clear Filters
             </button>
+            <SavedViewsPanel
+              views={savedViews}
+              onSave={(name) => saveView(name, { filterPinPns })}
+              onApply={(filters) => {
+                const f = filters as any;
+                setFilterPinPns(f.filterPinPns ?? []);
+              }}
+              onDelete={deleteView}
+            />
             <div className="w-px h-4 bg-zinc-200 mx-1"></div>
             <Filter className="h-4 w-4 text-zinc-400 ml-2" />
             <MultiSelectDropdown
@@ -474,9 +499,19 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
                   <tr className="bg-zinc-50/50">
+                    {isAdmin && (
+                      <th className="px-4 py-4 border-b border-zinc-100 w-10">
+                        <input
+                          type="checkbox"
+                          className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+                          checked={isAllSelected(filteredPins.slice(0, displayCount).map(x => x.id))}
+                          onChange={() => toggleAll(filteredPins.slice(0, displayCount).map(x => x.id))}
+                        />
+                      </th>
+                    )}
                     {columns.filter(col => visibleColumns.includes(col.key)).map((col, i) => (
-                      <th 
-                        key={col.key} 
+                      <th
+                        key={col.key}
                         className={cn("px-0 py-0 border-b border-zinc-100", i === 0 && visibleColumns[0] === col.key && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}
                       >
                         <div className="px-6 py-4 flex items-center cursor-pointer hover:bg-zinc-100/50 transition-colors" onClick={() => handleSort(col.key)}>
@@ -495,12 +530,13 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                 <tbody className="divide-y divide-zinc-50">
                   <AnimatePresence mode="popLayout">
                     {editingId === 'new' && (
-                      <motion.tr 
+                      <motion.tr
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         className="bg-zinc-50/30"
                       >
+                        {isAdmin && <td className="px-4 py-3 w-10" />}
                         {columns.filter(col => visibleColumns.includes(col.key)).map(col => (
                           <td key={col.key} className="px-6 py-3">
                             <input
@@ -532,6 +568,8 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
                       handleUpdate={handleUpdate}
                       setModal={setModal}
                       setSaveModal={setSaveModal}
+                      isSelected={selectedIds.has(pin.id)}
+                      onToggle={() => toggleOne(pin.id)}
                     />
                   ))}
                   </AnimatePresence>
@@ -549,11 +587,13 @@ export default function PogoPinInfo({ isAdmin, selectedFacility }: { isAdmin: bo
         )}
       </AnimatePresence>
 
+      <BulkActionBar count={selectedIds.size} onDelete={handleBulkDelete} onClear={clearSelection} />
+
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {modal.isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}

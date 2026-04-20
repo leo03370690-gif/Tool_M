@@ -45,6 +45,7 @@ const MaintenanceRecord = lazy(() => import('./MaintenanceRecord'));
 const MaintenanceHistory = lazy(() => import('./MaintenanceHistory'));
 const LoadBoardHistory = lazy(() => import('./LoadBoardHistory'));
 const AnalyticsDashboard = lazy(() => import('./AnalyticsDashboard'));
+const CommandPalette = lazy(() => import('./CommandPalette'));
 
 interface DashboardProps {
   user: FirebaseUser;
@@ -62,6 +63,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
   const [selectedLBNo, setSelectedLBNo] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   const isAdmin = role === 'admin';
 
@@ -157,8 +159,33 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
 
   const handleLogout = () => signOut(auth);
 
+  const paletteCommands = menuItems.map(item => ({
+    id: item.id,
+    label: item.label,
+    icon: <item.icon className="h-4 w-4" />,
+    action: () => handleNavigate(item.id as Tab),
+  }));
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
+
   return (
     <div className="flex h-screen bg-bg-canvas font-sans text-brand-primary overflow-hidden">
+      <Suspense fallback={null}>
+        <CommandPalette
+          commands={paletteCommands}
+          isOpen={isPaletteOpen}
+          onClose={() => setIsPaletteOpen(false)}
+        />
+      </Suspense>
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -345,6 +372,15 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
           </div>
 
           <div className="flex items-center gap-4 md:gap-6">
+            <button
+              onClick={() => setIsPaletteOpen(true)}
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors text-xs"
+              title="快速搜尋 (Ctrl+K)"
+            >
+              <SearchIcon className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">搜尋功能</span>
+              <kbd className="hidden lg:inline text-[10px] border border-zinc-300 rounded px-1">Ctrl+K</kbd>
+            </button>
             <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-zinc-200 ring-2 ring-white shadow-sm overflow-hidden shrink-0">
               <img 
                 src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} 

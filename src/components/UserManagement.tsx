@@ -11,6 +11,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { usePersistentState } from '../lib/usePersistentState';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
+import { useToast } from '../contexts/ToastContext';
 
 enum OperationType {
   CREATE = 'create',
@@ -72,6 +73,7 @@ interface UserData {
 }
 
 export default function UserManagement() {
+  const { addToast } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
   const [newUsername, setNewUsername] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -138,9 +140,9 @@ export default function UserManagement() {
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/email-already-in-use') {
-        alert('A user with this email/username already exists.');
+        addToast('A user with this email/username already exists.', 'error');
       } else {
-        alert('Failed to add user: ' + err.message);
+        addToast('Failed to add user: ' + err.message, 'error');
       }
     } finally {
       if (secondaryApp) {
@@ -152,18 +154,18 @@ export default function UserManagement() {
 
   const handleSendResetEmail = async (user: UserData) => {
     if (!user.email) {
-      alert('This user does not have an email address associated.');
+      addToast('This user does not have an email address associated.', 'error');
       return;
     }
     
     setResettingId(user.id);
     try {
       await sendPasswordResetEmail(auth, user.email);
-      alert(`Password reset email sent to ${user.email}`);
+      addToast(`Password reset email sent to ${user.email}`, 'success');
       await logAuditAction('Send Reset Email', `Sent password reset email to ${user.username} (${user.email})`);
     } catch (err: any) {
       console.error(err);
-      alert('Failed to send reset email: ' + err.message);
+      addToast('Failed to send reset email: ' + err.message, 'error');
     } finally {
       setResettingId(null);
     }
@@ -177,7 +179,7 @@ export default function UserManagement() {
       setDeleteModal({ isOpen: false, id: null, username: null });
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("Failed to delete user. Please try again.");
+      addToast('Failed to delete user. Please try again.', 'error');
     } finally {
       setDeletingId(null);
     }

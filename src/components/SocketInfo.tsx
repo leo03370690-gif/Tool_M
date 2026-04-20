@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { useCollectionCRUD } from '../lib/useCollectionCRUD';
 import { Plus, Trash2, Edit2, Check, X, Search, MoreHorizontal, BarChart2, List, Filter, ArrowUpDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,6 +8,12 @@ import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
 import { useDebounce } from '../lib/useDebounce';
+import { useBulkSelect } from '../lib/useBulkSelect';
+import BulkActionBar from './ui/BulkActionBar';
+import { validateForm } from '../lib/validate';
+import { useToast } from '../contexts/ToastContext';
+import { useSavedViews } from '../lib/useSavedViews';
+import SavedViewsPanel from './ui/SavedViewsPanel';
 
 interface Socket {
   id: string;
@@ -40,26 +45,30 @@ interface Socket {
   pnPcb: string;
 }
 
-const SocketRow = React.memo(({ 
-  socket, 
-  idx, 
-  columns, 
-  isAdmin, 
-  editingId, 
-  setEditingId, 
-  handleUpdate, 
+const SocketRow = React.memo(({
+  socket,
+  idx,
+  columns,
+  isAdmin,
+  editingId,
+  setEditingId,
+  handleUpdate,
   setModal,
-  setSaveModal
-}: { 
-  socket: Socket, 
-  idx: number, 
-  columns: any[], 
-  isAdmin: boolean, 
-  editingId: string | null, 
-  setEditingId: (id: string | null) => void, 
-  handleUpdate: (id: string, data: any) => void, 
+  setSaveModal,
+  isSelected,
+  onToggle
+}: {
+  socket: Socket,
+  idx: number,
+  columns: any[],
+  isAdmin: boolean,
+  editingId: string | null,
+  setEditingId: (id: string | null) => void,
+  handleUpdate: (id: string, data: any) => void,
   setModal: (modal: any) => void,
-  setSaveModal: (modal: any) => void
+  setSaveModal: (modal: any) => void,
+  isSelected: boolean,
+  onToggle: () => void
 }) => {
   const [localData, setLocalData] = useState<Partial<Socket>>(socket);
   
@@ -76,9 +85,19 @@ const SocketRow = React.memo(({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx * 0.01, 0.5) }}
-      key={socket.id} 
-      className="group hover:bg-zinc-50/80 transition-colors"
+      key={socket.id}
+      className={cn("group hover:bg-zinc-50/80 transition-colors", isSelected && "bg-blue-50/60")}
     >
+      {isAdmin && (
+        <td className="px-4 py-4 w-10" onClick={e => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+            checked={isSelected}
+            onChange={onToggle}
+          />
+        </td>
+      )}
       {columns.map((col, i) => (
         <td key={col.key} className={cn("px-6 py-4 text-zinc-600 whitespace-nowrap", i === 0 && "sticky left-0 bg-white group-hover:bg-zinc-50/80 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors")}>
           {isEditing ? (
@@ -137,6 +156,10 @@ const SocketRow = React.memo(({
 });
 
 export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
+  const { add, update, remove } = useCollectionCRUD<Socket>('sockets');
+  const { addToast } = useToast();
+  const { selectedIds, toggleOne, toggleAll, clearSelection, isAllSelected } = useBulkSelect();
+  const { views: savedViews, saveView, deleteView } = useSavedViews('socketInfo_savedViews');
   const { sockets: allSockets, loading } = useData();
   
   const sockets = useMemo(() => {
@@ -161,6 +184,8 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
   const [filterProjects, setFilterProjects] = usePersistentState<string[]>('socketInfo_filterProjects', []);
   const [filterStatuses, setFilterStatuses] = usePersistentState<string[]>('socketInfo_filterStatuses', []);
   const [filterPogoPinPns, setFilterPogoPinPns] = usePersistentState<string[]>('socketInfo_filterPogoPinPns', []);
+
+  useEffect(() => { clearSelection(); }, [debouncedSearchTerm, filterSocketGroups, filterToolsIds, filterProjects, filterStatuses, filterPogoPinPns, selectedFacility]);
   const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('socketInfo_visibleColumns', [
     'facility', 'location', 'toolsId', 'package', 'pinBall', 'packageSize', 'project', 'status', 'contactCountPin1', 'lifeCountPin1', 'contactLimitPin1', 'socketGroupPin1', 'pogoPinPnPin1', 'socketPnPin1', 'contactCountOver70Pin1', 'contactCountPin2', 'lifeCountPin2', 'contactLimitPin2', 'pogoPinPnPin2', 'contactCountOver70Pin2', 'contactCountPcb', 'lifeCountPcb', 'contactLimitPcb', 'pnPcb', 'contactCountOver70Pcb', 'usedFlag'
   ]);
@@ -176,40 +201,31 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
   };
 
   const handleAdd = async () => {
-    if (!newSocket.toolsId) return;
-    try {
-      await addDoc(collection(db, 'sockets'), {
-        ...newSocket,
-        facility: selectedFacility === 'ALL' ? (newSocket.facility || '') : selectedFacility
-      });
-      setNewSocket({});
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error adding socket record:', err);
-      alert('Failed to add record. Please try again.');
-    }
+    const ok = validateForm<Socket>(newSocket, [
+      { field: 'facility', label: 'Facility', required: true },
+      { field: 'toolsId', label: 'Tools ID', required: true },
+    ], addToast);
+    if (!ok) return;
+    const success = await add({ ...newSocket, facility: selectedFacility === 'ALL' ? (newSocket.facility || '') : selectedFacility });
+    if (success) { setNewSocket({}); setEditingId(null); }
   };
 
   const handleUpdate = async (id: string, data: Partial<Socket>) => {
-    try {
-      await updateDoc(doc(db, 'sockets', id), data);
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error updating socket record:', err);
-      alert('Failed to update record. Please try again.');
-    }
+    const ok = await update(id, data);
+    if (ok) setEditingId(null);
   };
 
   const handleDelete = async () => {
     if (modal.id) {
-      try {
-        await deleteDoc(doc(db, 'sockets', modal.id));
-        setModal({ isOpen: false, id: null });
-      } catch (err) {
-        console.error('Error deleting socket record:', err);
-        alert('Failed to delete record. Please try again.');
-      }
+      const ok = await remove(modal.id);
+      if (ok) setModal({ isOpen: false, id: null });
     }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    await Promise.all(ids.map(id => remove(id)));
+    clearSelection();
   };
 
   const getUniqueValues = (key: keyof Socket, currentFilters: any) => {
@@ -375,6 +391,19 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
             >
               Clear
             </button>
+            <SavedViewsPanel
+              views={savedViews}
+              onSave={(name) => saveView(name, { filterSocketGroups, filterToolsIds, filterProjects, filterStatuses, filterPogoPinPns })}
+              onApply={(filters) => {
+                const f = filters as any;
+                setFilterSocketGroups(f.filterSocketGroups ?? []);
+                setFilterToolsIds(f.filterToolsIds ?? []);
+                setFilterProjects(f.filterProjects ?? []);
+                setFilterStatuses(f.filterStatuses ?? []);
+                setFilterPogoPinPns(f.filterPogoPinPns ?? []);
+              }}
+              onDelete={deleteView}
+            />
           </div>
           <div className="w-px h-4 bg-zinc-200 shrink-0"></div>
           <div className="flex flex-wrap items-center gap-2 px-1">
@@ -446,9 +475,19 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
               <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="bg-zinc-50/50">
+                {isAdmin && (
+                  <th className="px-4 py-4 border-b border-zinc-100 w-10">
+                    <input
+                      type="checkbox"
+                      className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+                      checked={isAllSelected(filteredSockets.slice(0, displayCount).map(x => x.id))}
+                      onChange={() => toggleAll(filteredSockets.slice(0, displayCount).map(x => x.id))}
+                    />
+                  </th>
+                )}
                 {columns.map((col, i) => (
-                  <th 
-                    key={col.key} 
+                  <th
+                    key={col.key}
                     className={cn("px-0 py-0 border-b border-zinc-100", i === 0 && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}
                   >
                     <div className="px-6 py-4 flex items-center cursor-pointer hover:bg-zinc-100/50 transition-colors" onClick={() => handleSort(col.key)}>
@@ -467,12 +506,13 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
             <tbody className="divide-y divide-zinc-50">
               <AnimatePresence mode="popLayout">
                 {editingId === 'new' && (
-                  <motion.tr 
+                  <motion.tr
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     className="bg-zinc-50/30"
                   >
+                    {isAdmin && <td className="px-4 py-3 w-10" />}
                     {columns.map(col => (
                       <td key={col.key} className="px-6 py-3">
                         <input
@@ -503,6 +543,8 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
                     handleUpdate={handleUpdate}
                     setModal={setModal}
                     setSaveModal={setSaveModal}
+                    isSelected={selectedIds.has(socket.id)}
+                    onToggle={() => toggleOne(socket.id)}
                   />
                 ))}
               </AnimatePresence>
@@ -587,11 +629,13 @@ export default function SocketInfo({ isAdmin, selectedFacility }: { isAdmin: boo
         )}
       </AnimatePresence>
 
+      <BulkActionBar count={selectedIds.size} onDelete={handleBulkDelete} onClear={clearSelection} />
+
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {modal.isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}

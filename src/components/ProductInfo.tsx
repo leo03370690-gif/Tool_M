@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { useCollectionCRUD } from '../lib/useCollectionCRUD';
 import { Plus, Trash2, Edit2, Check, X, Search, MoreHorizontal, Filter, ArrowUpDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,6 +8,12 @@ import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
 import { useDebounce } from '../lib/useDebounce';
+import { useBulkSelect } from '../lib/useBulkSelect';
+import BulkActionBar from './ui/BulkActionBar';
+import { validateForm } from '../lib/validate';
+import { useToast } from '../contexts/ToastContext';
+import { useSavedViews } from '../lib/useSavedViews';
+import SavedViewsPanel from './ui/SavedViewsPanel';
 
 interface Product {
   id: string;
@@ -34,28 +39,32 @@ interface Product {
   socketName2: string;
 }
 
-const ProductRow = React.memo(({ 
-  product, 
-  idx, 
-  columns, 
-  isAdmin, 
-  editingId, 
-  setEditingId, 
-  handleUpdate, 
+const ProductRow = React.memo(({
+  product,
+  idx,
+  columns,
+  isAdmin,
+  editingId,
+  setEditingId,
+  handleUpdate,
   setModal,
   setSelectedDevice,
-  setSaveModal
-}: { 
-  product: Product, 
-  idx: number, 
-  columns: any[], 
-  isAdmin: boolean, 
-  editingId: string | null, 
-  setEditingId: (id: string | null) => void, 
-  handleUpdate: (id: string, data: any) => void, 
+  setSaveModal,
+  isSelected,
+  onToggle
+}: {
+  product: Product,
+  idx: number,
+  columns: any[],
+  isAdmin: boolean,
+  editingId: string | null,
+  setEditingId: (id: string | null) => void,
+  handleUpdate: (id: string, data: any) => void,
   setModal: (modal: any) => void,
   setSelectedDevice: (device: string) => void,
-  setSaveModal: (modal: any) => void
+  setSaveModal: (modal: any) => void,
+  isSelected: boolean,
+  onToggle: () => void
 }) => {
   const [localData, setLocalData] = useState<Partial<Product>>(product);
   
@@ -73,8 +82,18 @@ const ProductRow = React.memo(({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx * 0.01, 0.5) }}
       key={product.id} 
-      className="group hover:bg-zinc-50/80 transition-colors"
+      className={cn("group hover:bg-zinc-50/80 transition-colors", isSelected && "bg-blue-50/60")}
     >
+      {isAdmin && (
+        <td className="px-4 py-4 w-10" onClick={e => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+            checked={isSelected}
+            onChange={onToggle}
+          />
+        </td>
+      )}
       {columns.map((col, i) => (
         <td key={col.key} className={cn("px-6 py-4 text-zinc-600 whitespace-nowrap", i === 0 && "sticky left-0 bg-white group-hover:bg-zinc-50/80 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors")}>
           {isEditing ? (
@@ -129,6 +148,10 @@ const ProductRow = React.memo(({
 });
 
 export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: { isAdmin: boolean, selectedFacility: string, onNavigate?: (tab: string) => void }) {
+  const { add, update, remove } = useCollectionCRUD<Product>('products');
+  const { addToast } = useToast();
+  const { selectedIds, toggleOne, toggleAll, clearSelection, isAllSelected } = useBulkSelect();
+  const { views: savedViews, saveView, deleteView } = useSavedViews('productInfo_savedViews');
   const { products: allProducts, lifeTimes: lifeTimesData, loading } = useData();
   
   const [viewMode, setViewMode] = useState<'inventory' | 'missingLifeTime'>('inventory');
@@ -153,6 +176,8 @@ export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: {
   const [filterNicknames, setFilterNicknames] = usePersistentState<string[]>('productInfo_filterNicknames', []);
   const [filterChangeKitGroups, setFilterChangeKitGroups] = usePersistentState<string[]>('productInfo_filterChangeKitGroups', []);
   const [filterLBGroups, setFilterLBGroups] = usePersistentState<string[]>('productInfo_filterLBGroups', []);
+
+  useEffect(() => { clearSelection(); }, [debouncedSearchTerm, filterDevices, filterProjectNames, filterNicknames, filterChangeKitGroups, filterLBGroups, selectedFacility]);
   const [displayCount, setDisplayCount] = useState(100);
   const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('productInfo_visibleColumns_v2', [
     'facility', 'device', 'projectName', 'nickname', 'tester', 'handler', 'temperature', 'insertion', 'siteNumber', 'ballCountDevice', 'changeKitGroup', 'kitName1', 'kitName2', 'kitName3', 'kitName4', 'kitName5', 'kitName6', 'lbGroup', 'socketName1', 'socketName2'
@@ -171,37 +196,31 @@ export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: {
   };
 
   const handleAdd = async () => {
-    if (!newProduct.device) return;
-    try {
-      await addDoc(collection(db, 'products'), newProduct);
-      setNewProduct({});
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error adding product record:', err);
-      alert('Failed to add record. Please try again.');
-    }
+    const ok = validateForm<Product>(newProduct, [
+      { field: 'facility', label: 'Facility', required: true },
+      { field: 'device', label: 'Device', required: true },
+    ], addToast);
+    if (!ok) return;
+    const success = await add(newProduct);
+    if (success) { setNewProduct({}); setEditingId(null); }
   };
 
   const handleUpdate = async (id: string, data: Partial<Product>) => {
-    try {
-      await updateDoc(doc(db, 'products', id), data);
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error updating product record:', err);
-      alert('Failed to update record. Please try again.');
-    }
+    const ok = await update(id, data);
+    if (ok) setEditingId(null);
   };
 
   const handleDelete = async () => {
     if (modal.id) {
-      try {
-        await deleteDoc(doc(db, 'products', modal.id));
-        setModal({ isOpen: false, id: null });
-      } catch (err) {
-        console.error('Error deleting product record:', err);
-        alert('Failed to delete record. Please try again.');
-      }
+      const ok = await remove(modal.id);
+      if (ok) setModal({ isOpen: false, id: null });
     }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    await Promise.all(ids.map(id => remove(id)));
+    clearSelection();
   };
 
   const getUniqueValues = (field: keyof Product, otherFilters: Record<string, string[]>) => {
@@ -419,6 +438,19 @@ export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: {
                 >
                   Clear
                 </button>
+                <SavedViewsPanel
+                  views={savedViews}
+                  onSave={(name) => saveView(name, { filterDevices, filterProjectNames, filterNicknames, filterChangeKitGroups, filterLBGroups })}
+                  onApply={(filters) => {
+                    const f = filters as { filterDevices?: string[]; filterProjectNames?: string[]; filterNicknames?: string[]; filterChangeKitGroups?: string[]; filterLBGroups?: string[] };
+                    setFilterDevices(f.filterDevices ?? []);
+                    setFilterProjectNames(f.filterProjectNames ?? []);
+                    setFilterNicknames(f.filterNicknames ?? []);
+                    setFilterChangeKitGroups(f.filterChangeKitGroups ?? []);
+                    setFilterLBGroups(f.filterLBGroups ?? []);
+                  }}
+                  onDelete={deleteView}
+                />
               </div>
               <div className="w-px h-4 bg-zinc-200 shrink-0"></div>
               <div className="flex flex-wrap items-center gap-2 px-1">
@@ -482,9 +514,19 @@ export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: {
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
                   <tr className="bg-zinc-50/50">
+                    {isAdmin && (
+                      <th className="px-4 py-4 border-b border-zinc-100 w-10">
+                        <input
+                          type="checkbox"
+                          className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+                          checked={isAllSelected(filteredProducts.slice(0, displayCount).map(x => x.id))}
+                          onChange={() => toggleAll(filteredProducts.slice(0, displayCount).map(x => x.id))}
+                        />
+                      </th>
+                    )}
                     {columns.map((col, i) => (
-                      <th 
-                        key={col.key} 
+                      <th
+                        key={col.key}
                         className={cn("px-0 py-0 border-b border-zinc-100", i === 0 && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}
                       >
                         <div className="px-6 py-4 flex items-center cursor-pointer hover:bg-zinc-100/50 transition-colors" onClick={() => handleSort(col.key)}>
@@ -503,12 +545,13 @@ export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: {
                 <tbody className="divide-y divide-zinc-50">
                   <AnimatePresence mode="popLayout">
                     {editingId === 'new' && (
-                      <motion.tr 
+                      <motion.tr
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         className="bg-zinc-50/30"
                       >
+                        {isAdmin && <td className="px-4 py-3 w-10" />}
                         {columns.map(col => (
                           <td key={col.key} className="px-6 py-3">
                             <input
@@ -540,6 +583,8 @@ export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: {
                         setModal={setModal}
                         setSelectedDevice={setSelectedDevice}
                         setSaveModal={setSaveModal}
+                        isSelected={selectedIds.has(product.id)}
+                        onToggle={() => toggleOne(product.id)}
                       />
                     ))}
                   </AnimatePresence>
@@ -685,6 +730,8 @@ export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: {
           </div>
         )}
       </AnimatePresence>
+
+      <BulkActionBar count={selectedIds.size} onDelete={handleBulkDelete} onClear={clearSelection} />
 
       {/* Device Details Modal */}
       <AnimatePresence>

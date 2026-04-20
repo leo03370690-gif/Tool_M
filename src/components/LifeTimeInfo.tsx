@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { useCollectionCRUD } from '../lib/useCollectionCRUD';
 import { Plus, Trash2, Edit2, Search, Check, X, Filter, ArrowUpDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,6 +8,12 @@ import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
 import { useDebounce } from '../lib/useDebounce';
+import { useBulkSelect } from '../lib/useBulkSelect';
+import BulkActionBar from './ui/BulkActionBar';
+import { validateForm } from '../lib/validate';
+import { useToast } from '../contexts/ToastContext';
+import { useSavedViews } from '../lib/useSavedViews';
+import SavedViewsPanel from './ui/SavedViewsPanel';
 
 interface LifeTime {
   id: string;
@@ -21,26 +26,30 @@ interface LifeTime {
   remark: string;
 }
 
-const LifeTimeRow = React.memo(({ 
-  record, 
-  idx, 
-  columns, 
-  isAdmin, 
-  editingId, 
-  setEditingId, 
-  handleUpdate, 
+const LifeTimeRow = React.memo(({
+  record,
+  idx,
+  columns,
+  isAdmin,
+  editingId,
+  setEditingId,
+  handleUpdate,
   setModal,
-  setSaveModal
-}: { 
-  record: LifeTime, 
-  idx: number, 
-  columns: any[], 
-  isAdmin: boolean, 
-  editingId: string | null, 
-  setEditingId: (id: string | null) => void, 
-  handleUpdate: (id: string, data: any) => void, 
+  setSaveModal,
+  isSelected,
+  onToggle
+}: {
+  record: LifeTime,
+  idx: number,
+  columns: any[],
+  isAdmin: boolean,
+  editingId: string | null,
+  setEditingId: (id: string | null) => void,
+  handleUpdate: (id: string, data: any) => void,
   setModal: (modal: any) => void,
-  setSaveModal: (modal: any) => void
+  setSaveModal: (modal: any) => void,
+  isSelected: boolean,
+  onToggle: () => void
 }) => {
   const [localData, setLocalData] = useState<Partial<LifeTime>>(record);
   
@@ -58,9 +67,19 @@ const LifeTimeRow = React.memo(({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ delay: Math.min(idx * 0.01, 0.5) }}
-      key={record.id} 
-      className="group hover:bg-zinc-50/80 transition-colors"
+      key={record.id}
+      className={cn("group hover:bg-zinc-50/80 transition-colors", isSelected && "bg-blue-50/60")}
     >
+      {isAdmin && (
+        <td className="px-4 py-4 w-10" onClick={e => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+            checked={isSelected}
+            onChange={onToggle}
+          />
+        </td>
+      )}
       {columns.map((col, i) => (
         <td key={col.key} className={cn("px-6 py-4 text-zinc-600 whitespace-nowrap", i === 0 && "sticky left-0 bg-white group-hover:bg-zinc-50/80 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors")}>
           {isEditing ? (
@@ -111,6 +130,10 @@ const LifeTimeRow = React.memo(({
 });
 
 export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
+  const { add, update, remove } = useCollectionCRUD<LifeTime>('lifeTimes');
+  const { addToast } = useToast();
+  const { selectedIds, toggleOne, toggleAll, clearSelection, isAllSelected } = useBulkSelect();
+  const { views: savedViews, saveView, deleteView } = useSavedViews('lifeTimeInfo_savedViews');
   const { lifeTimes: allRecords } = useData();
   
   const records = useMemo(() => {
@@ -132,6 +155,8 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
   const [filterSocketGroups, setFilterSocketGroups] = usePersistentState<string[]>('lifeTimeInfo_filterSocketGroups', []);
   const [filterPogoPin1Pns, setFilterPogoPin1Pns] = usePersistentState<string[]>('lifeTimeInfo_filterPogoPin1Pns', []);
   const [filterLoadBoardGroups, setFilterLoadBoardGroups] = usePersistentState<string[]>('lifeTimeInfo_filterLoadBoardGroups', []);
+
+  useEffect(() => { clearSelection(); }, [debouncedSearchTerm, filterSocketGroups, filterPogoPin1Pns, filterLoadBoardGroups, selectedFacility]);
   const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('lifeTimeInfo_visibleColumns', [
     'facility', 'socketGroup', 'pogoPin1Pn', 'pogoPinQty', 'lifeTime', 'loadBoardGroup', 'remark'
   ]);
@@ -147,40 +172,30 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
   };
 
   const handleAdd = async () => {
-    if (!newRecord.socketGroup) return;
-    try {
-      await addDoc(collection(db, 'lifeTimes'), {
-        ...newRecord,
-        facility: selectedFacility === 'ALL' ? (newRecord.facility || '') : selectedFacility
-      });
-      setNewRecord({});
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error adding life time record:', err);
-      alert('Failed to add record. Please try again.');
-    }
+    const ok = validateForm<LifeTime>(newRecord, [
+      { field: 'socketGroup', label: 'Socket Group', required: true },
+    ], addToast);
+    if (!ok) return;
+    const success = await add({ ...newRecord, facility: selectedFacility === 'ALL' ? (newRecord.facility || '') : selectedFacility });
+    if (success) { setNewRecord({}); setEditingId(null); }
   };
 
   const handleUpdate = async (id: string, data: Partial<LifeTime>) => {
-    try {
-      await updateDoc(doc(db, 'lifeTimes', id), data);
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error updating life time record:', err);
-      alert('Failed to update record. Please try again.');
-    }
+    const ok = await update(id, data);
+    if (ok) setEditingId(null);
   };
 
   const handleDelete = async () => {
     if (modal.id) {
-      try {
-        await deleteDoc(doc(db, 'lifeTimes', modal.id));
-        setModal({ isOpen: false, id: null });
-      } catch (err) {
-        console.error('Error deleting life time record:', err);
-        alert('Failed to delete record. Please try again.');
-      }
+      const ok = await remove(modal.id);
+      if (ok) setModal({ isOpen: false, id: null });
     }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    await Promise.all(ids.map(id => remove(id)));
+    clearSelection();
   };
 
   const getUniqueValues = (key: keyof LifeTime, currentFilters: any) => {
@@ -276,6 +291,17 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
             >
               Clear
             </button>
+            <SavedViewsPanel
+              views={savedViews}
+              onSave={(name) => saveView(name, { filterSocketGroups, filterPogoPin1Pns, filterLoadBoardGroups })}
+              onApply={(filters) => {
+                const f = filters as any;
+                setFilterSocketGroups(f.filterSocketGroups ?? []);
+                setFilterPogoPin1Pns(f.filterPogoPin1Pns ?? []);
+                setFilterLoadBoardGroups(f.filterLoadBoardGroups ?? []);
+              }}
+              onDelete={deleteView}
+            />
           </div>
           <div className="w-px h-4 bg-zinc-200 shrink-0"></div>
           <div className="flex flex-wrap items-center gap-2 px-1">
@@ -331,9 +357,19 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="bg-zinc-50/50">
+                {isAdmin && (
+                  <th className="px-4 py-4 border-b border-zinc-100 w-10">
+                    <input
+                      type="checkbox"
+                      className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+                      checked={isAllSelected(filteredRecords.slice(0, displayCount).map(x => x.id))}
+                      onChange={() => toggleAll(filteredRecords.slice(0, displayCount).map(x => x.id))}
+                    />
+                  </th>
+                )}
                 {columns.map((col, i) => (
-                  <th 
-                    key={col.key} 
+                  <th
+                    key={col.key}
                     className={cn("px-0 py-0 border-b border-zinc-100", i === 0 && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}
                   >
                     <div className="px-6 py-4 flex items-center cursor-pointer hover:bg-zinc-100/50 transition-colors" onClick={() => handleSort(col.key)}>
@@ -352,12 +388,13 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
             <tbody className="divide-y divide-zinc-50">
               <AnimatePresence mode="popLayout">
                 {editingId === 'new' && (
-                  <motion.tr 
+                  <motion.tr
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     className="bg-zinc-50/30"
                   >
+                    {isAdmin && <td className="px-4 py-3 w-10" />}
                     {columns.map(col => (
                       <td key={col.key} className="px-6 py-3">
                         <input
@@ -388,6 +425,8 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
                     handleUpdate={handleUpdate}
                     setModal={setModal}
                     setSaveModal={setSaveModal}
+                    isSelected={selectedIds.has(record.id)}
+                    onToggle={() => toggleOne(record.id)}
                   />
                 ))}
               </AnimatePresence>
@@ -410,11 +449,13 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
         </DoubleScrollbar>
       </motion.div>
 
+      <BulkActionBar count={selectedIds.size} onDelete={handleBulkDelete} onClear={clearSelection} />
+
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {modal.isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}

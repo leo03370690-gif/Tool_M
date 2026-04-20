@@ -10,6 +10,7 @@ import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
 import { useDebounce } from '../lib/useDebounce';
 import { useFacilityFilter } from '../lib/useFacilityFilter';
+import { useToast } from '../contexts/ToastContext';
 
 interface MaintenanceRecord {
   id: string;
@@ -172,6 +173,7 @@ export default function MaintenanceHistory({
   onAddMaintenanceRecord: () => void,
   onLBClick?: (lbNo: string) => void
 }) {
+  const { addToast } = useToast();
   const { maintenanceRecords: allRecords, loading } = useData();
   
   const facilityRecords = useFacilityFilter(allRecords, selectedFacility);
@@ -206,7 +208,7 @@ export default function MaintenanceHistory({
       console.error('Error updating record:', error);
       // Re-enable editing if error occurs so user can retry
       setEditingId(currentEditingId);
-      alert('Failed to update record. The UI has been reset.');
+      addToast('Failed to update record. The UI has been reset.', 'error');
     }
   }, [editingId]);
 
@@ -217,7 +219,7 @@ export default function MaintenanceHistory({
         setDeleteModal({ isOpen: false, id: null });
       } catch (error) {
         console.error('Error deleting record:', error);
-        alert('Failed to delete record.');
+        addToast('Failed to delete record.', 'error');
       }
     }
   }, [deleteModal]);

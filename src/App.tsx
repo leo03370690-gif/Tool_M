@@ -11,7 +11,9 @@ import { motion, AnimatePresence } from 'motion/react';
 
 import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastProvider } from './contexts/ToastContext';
 import OfflineBanner from './components/OfflineBanner';
+import ToastContainer from './components/ui/ToastContainer';
 
 const ADMIN_EMAILS = ['leo03370690@gmail.com', 'leo.lo@tooling.local'];
 
@@ -97,6 +99,7 @@ export default function App() {
   }
 
   return (
+    <ToastProvider>
     <ThemeProvider>
       <div className="min-h-screen bg-bg-canvas">
         <OfflineBanner />
@@ -124,6 +127,7 @@ export default function App() {
           )}
         </AnimatePresence>
 
+        <ToastContainer />
         <Router>
           <Routes>
             <Route 
@@ -169,5 +173,6 @@ export default function App() {
         </Router>
       </div>
     </ThemeProvider>
+    </ToastProvider>
   );
 }

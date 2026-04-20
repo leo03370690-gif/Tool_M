@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { useCollectionCRUD } from '../lib/useCollectionCRUD';
 import { Plus, Trash2, Edit2, Search, BarChart2, List, Check, X, Filter, ArrowUpDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,6 +8,12 @@ import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
 import { useDebounce } from '../lib/useDebounce';
+import { useBulkSelect } from '../lib/useBulkSelect';
+import BulkActionBar from './ui/BulkActionBar';
+import { validateForm } from '../lib/validate';
+import { useToast } from '../contexts/ToastContext';
+import { useSavedViews } from '../lib/useSavedViews';
+import SavedViewsPanel from './ui/SavedViewsPanel';
 
 interface ChangeKit {
   id: string;
@@ -22,26 +27,30 @@ interface ChangeKit {
   idleTime: string;
 }
 
-const KitRow = React.memo(({ 
-  kit, 
-  idx, 
-  columns, 
-  isAdmin, 
-  editingId, 
-  setEditingId, 
-  handleUpdate, 
+const KitRow = React.memo(({
+  kit,
+  idx,
+  columns,
+  isAdmin,
+  editingId,
+  setEditingId,
+  handleUpdate,
   setModal,
-  setSaveModal
-}: { 
-  kit: ChangeKit, 
-  idx: number, 
-  columns: any[], 
-  isAdmin: boolean, 
-  editingId: string | null, 
-  setEditingId: (id: string | null) => void, 
-  handleUpdate: (id: string, data: any) => void, 
+  setSaveModal,
+  isSelected,
+  onToggle
+}: {
+  kit: ChangeKit,
+  idx: number,
+  columns: any[],
+  isAdmin: boolean,
+  editingId: string | null,
+  setEditingId: (id: string | null) => void,
+  handleUpdate: (id: string, data: any) => void,
   setModal: (modal: any) => void,
-  setSaveModal: (modal: any) => void
+  setSaveModal: (modal: any) => void,
+  isSelected: boolean,
+  onToggle: () => void
 }) => {
   const [localData, setLocalData] = useState<Partial<ChangeKit>>(kit);
   
@@ -58,9 +67,19 @@ const KitRow = React.memo(({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx * 0.01, 0.5) }}
-      key={kit.id} 
-      className="group hover:bg-zinc-50/80 transition-colors"
+      key={kit.id}
+      className={cn("group hover:bg-zinc-50/80 transition-colors", isSelected && "bg-blue-50/60")}
     >
+      {isAdmin && (
+        <td className="px-4 py-4 w-10" onClick={e => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+            checked={isSelected}
+            onChange={onToggle}
+          />
+        </td>
+      )}
       {columns.map((col, i) => (
         <td key={col.key} className={cn("px-6 py-4 text-zinc-600 whitespace-nowrap", i === 0 && "sticky left-0 bg-white group-hover:bg-zinc-50/80 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors")}>
           {isEditing ? (
@@ -111,6 +130,10 @@ const KitRow = React.memo(({
 });
 
 export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: boolean, selectedFacility: string }) {
+  const { add, update, remove } = useCollectionCRUD<ChangeKit>('changeKits');
+  const { addToast } = useToast();
+  const { selectedIds, toggleOne, toggleAll, clearSelection, isAllSelected } = useBulkSelect();
+  const { views: savedViews, saveView, deleteView } = useSavedViews('changeKitInfo_savedViews');
   const { changeKits: allKits } = useData();
   
   const kits = useMemo(() => {
@@ -133,6 +156,8 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
   const [filterToolsIds, setFilterToolsIds] = usePersistentState<string[]>('changeKitInfo_filterToolsIds', []);
   const [filterChangeKitGroups, setFilterChangeKitGroups] = usePersistentState<string[]>('changeKitInfo_filterChangeKitGroups', []);
   const [filterStatuses, setFilterStatuses] = usePersistentState<string[]>('changeKitInfo_filterStatuses', []);
+
+  useEffect(() => { clearSelection(); }, [debouncedSearchTerm, filterToolsIds, filterChangeKitGroups, filterStatuses, selectedFacility]);
   const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('changeKitInfo_visibleColumns', [
     'facility', 'location', 'kind', 'toolsId', 'packageSize', 'changeKitGroup', 'status', 'idleTime'
   ]);
@@ -148,39 +173,30 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
   };
 
   const handleAdd = async () => {
-    if (!newKit.toolsId) return;
-    try {
-      await addDoc(collection(db, 'changeKits'), {
-        ...newKit,
-        facility: selectedFacility === 'ALL' ? (newKit.facility || '') : selectedFacility
-      });
-      setNewKit({});
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error adding change kit:', err);
-      alert('Failed to add record. Please try again.');
-    }
+    const ok = validateForm<ChangeKit>(newKit, [
+      { field: 'facility', label: 'Facility', required: true },
+      { field: 'toolsId', label: 'Tools ID', required: true },
+    ], addToast);
+    if (!ok) return;
+    const success = await add({ ...newKit, facility: selectedFacility === 'ALL' ? (newKit.facility || '') : selectedFacility });
+    if (success) { setNewKit({}); setEditingId(null); }
   };
 
   const handleUpdate = async (id: string, data: Partial<ChangeKit>) => {
-    try {
-      await updateDoc(doc(db, 'changeKits', id), data);
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error updating change kit:', err);
-      alert('Failed to update record. Please try again.');
-    }
+    const ok = await update(id, data);
+    if (ok) setEditingId(null);
   };
 
   const handleDelete = async () => {
     if (!modal.id) return;
-    try {
-      await deleteDoc(doc(db, 'changeKits', modal.id));
-      setModal({ isOpen: false, id: null });
-    } catch (err) {
-      console.error('Error deleting change kit:', err);
-      alert('Failed to delete record. Please try again.');
-    }
+    const ok = await remove(modal.id);
+    if (ok) setModal({ isOpen: false, id: null });
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    await Promise.all(ids.map(id => remove(id)));
+    clearSelection();
   };
 
   const getUniqueValues = (key: keyof ChangeKit, currentFilters: any) => {
@@ -320,6 +336,17 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
             >
               Clear
             </button>
+            <SavedViewsPanel
+              views={savedViews}
+              onSave={(name) => saveView(name, { filterToolsIds, filterChangeKitGroups, filterStatuses })}
+              onApply={(filters) => {
+                const f = filters as any;
+                setFilterToolsIds(f.filterToolsIds ?? []);
+                setFilterChangeKitGroups(f.filterChangeKitGroups ?? []);
+                setFilterStatuses(f.filterStatuses ?? []);
+              }}
+              onDelete={deleteView}
+            />
           </div>
           <div className="w-px h-4 bg-zinc-200 shrink-0"></div>
           <div className="flex flex-wrap items-center gap-2 px-1">
@@ -379,9 +406,19 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
                   <tr className="bg-zinc-50/50">
+                    {isAdmin && (
+                      <th className="px-4 py-4 border-b border-zinc-100 w-10">
+                        <input
+                          type="checkbox"
+                          className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+                          checked={isAllSelected(filteredKits.slice(0, displayCount).map(x => x.id))}
+                          onChange={() => toggleAll(filteredKits.slice(0, displayCount).map(x => x.id))}
+                        />
+                      </th>
+                    )}
                     {columns.map((col, i) => (
-                      <th 
-                        key={col.key} 
+                      <th
+                        key={col.key}
                         className={cn("px-0 py-0 border-b border-zinc-100", i === 0 && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}
                       >
                         <div className="px-6 py-4 flex items-center cursor-pointer hover:bg-zinc-100/50 transition-colors" onClick={() => handleSort(col.key)}>
@@ -400,12 +437,13 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                 <tbody className="divide-y divide-zinc-50">
                   <AnimatePresence mode="popLayout">
                     {editingId === 'new' && (
-                      <motion.tr 
+                      <motion.tr
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         className="bg-zinc-50/30"
                       >
+                        {isAdmin && <td className="px-4 py-3 w-10" />}
                         {columns.map(col => (
                           <td key={col.key} className="px-6 py-3">
                             <input
@@ -436,6 +474,8 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
                       handleUpdate={handleUpdate}
                       setModal={setModal}
                       setSaveModal={setSaveModal}
+                      isSelected={selectedIds.has(kit.id)}
+                      onToggle={() => toggleOne(kit.id)}
                     />
                   ))}
                   </AnimatePresence>
@@ -520,11 +560,13 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
         )}
       </AnimatePresence>
 
+      <BulkActionBar count={selectedIds.size} onDelete={handleBulkDelete} onClear={clearSelection} />
+
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {modal.isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}

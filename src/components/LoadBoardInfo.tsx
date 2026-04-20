@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { useCollectionCRUD } from '../lib/useCollectionCRUD';
 import { Plus, Trash2, Edit2, Check, X, Search, BarChart2, List, Filter, ArrowUpDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,6 +8,12 @@ import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
 import { useData } from '../contexts/DataContext';
 import { useDebounce } from '../lib/useDebounce';
+import { useBulkSelect } from '../lib/useBulkSelect';
+import BulkActionBar from './ui/BulkActionBar';
+import { validateForm } from '../lib/validate';
+import { useToast } from '../contexts/ToastContext';
+import { useSavedViews } from '../lib/useSavedViews';
+import SavedViewsPanel from './ui/SavedViewsPanel';
 
 interface LoadBoard {
   id: string;
@@ -24,28 +29,32 @@ interface LoadBoard {
   targetReturnDate: string;
 }
 
-const LoadBoardRow = React.memo(({ 
-  lb, 
-  idx, 
-  columns, 
-  isAdmin, 
-  editingId, 
-  setEditingId, 
-  handleUpdate, 
+const LoadBoardRow = React.memo(({
+  lb,
+  idx,
+  columns,
+  isAdmin,
+  editingId,
+  setEditingId,
+  handleUpdate,
   setModal,
   setSaveModal,
-  onAddMaintenanceClick
-}: { 
-  lb: LoadBoard, 
-  idx: number, 
-  columns: any[], 
-  isAdmin: boolean, 
-  editingId: string | null, 
-  setEditingId: (id: string | null) => void, 
-  handleUpdate: (id: string, data: any) => void, 
+  onAddMaintenanceClick,
+  isSelected,
+  onToggle
+}: {
+  lb: LoadBoard,
+  idx: number,
+  columns: any[],
+  isAdmin: boolean,
+  editingId: string | null,
+  setEditingId: (id: string | null) => void,
+  handleUpdate: (id: string, data: any) => void,
   setModal: (modal: any) => void,
   setSaveModal: (modal: any) => void,
-  onAddMaintenanceClick: (lb: LoadBoard) => void
+  onAddMaintenanceClick: (lb: LoadBoard) => void,
+  isSelected: boolean,
+  onToggle: () => void
 }) => {
   const [localData, setLocalData] = useState<Partial<LoadBoard>>(lb);
   
@@ -62,9 +71,19 @@ const LoadBoardRow = React.memo(({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx * 0.01, 0.5) }}
-      key={lb.id} 
-      className="group hover:bg-zinc-50/80 transition-colors"
+      key={lb.id}
+      className={cn("group hover:bg-zinc-50/80 transition-colors", isSelected && "bg-blue-50/60")}
     >
+      {isAdmin && (
+        <td className="px-4 py-4 w-10" onClick={e => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+            checked={isSelected}
+            onChange={onToggle}
+          />
+        </td>
+      )}
       {columns.map((col, i) => (
         <td key={col.key} className={cn("px-6 py-4 text-zinc-600 whitespace-nowrap", i === 0 && "sticky left-0 bg-white group-hover:bg-zinc-50/80 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors")}>
           {isEditing ? (
@@ -117,17 +136,21 @@ const LoadBoardRow = React.memo(({
   );
 });
 
-export default function LoadBoardInfo({ 
-  isAdmin, 
+export default function LoadBoardInfo({
+  isAdmin,
   selectedFacility,
   onAddMaintenanceRecord,
   onViewHistory
-}: { 
-  isAdmin: boolean, 
+}: {
+  isAdmin: boolean,
   selectedFacility: string,
   onAddMaintenanceRecord: (data: any) => void,
   onViewHistory?: (lbNo: string) => void
 }) {
+  const { add, update, remove } = useCollectionCRUD<LoadBoard>('loadBoards');
+  const { addToast } = useToast();
+  const { selectedIds, toggleOne, toggleAll, clearSelection, isAllSelected } = useBulkSelect();
+  const { views: savedViews, saveView, deleteView } = useSavedViews('loadBoardInfo_savedViews');
   const { loadBoards: allLoadBoards, loading } = useData();
   
   const loadBoards = useMemo(() => {
@@ -149,6 +172,8 @@ export default function LoadBoardInfo({
   const [filterLBNames, setFilterLBNames] = usePersistentState<string[]>('lbInfo_filterLBNames', []);
   const [filterLBGroups, setFilterLBGroups] = usePersistentState<string[]>('lbInfo_filterLBGroups', []);
   const [filterLocations, setFilterLocations] = usePersistentState<string[]>('lbInfo_filterLocations', []);
+
+  useEffect(() => { clearSelection(); }, [debouncedSearchTerm, filterProjectNames, filterLBNames, filterLBGroups, filterLocations, selectedFacility]);
   const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>('lbInfo_visibleColumns', [
     'facility', 'projectName', 'lbName', 'lbGroup', 'location', 'insertion', 'availableQty', 'remark', 'sendBackDate', 'targetReturnDate'
   ]);
@@ -168,40 +193,34 @@ export default function LoadBoardInfo({
   const [maintenanceModal, setMaintenanceModal] = useState<{isOpen: boolean, lb: LoadBoard | null}>({ isOpen: false, lb: null });
 
   const handleAdd = async () => {
-    if (!newLoadBoard.projectName) return;
-    try {
-      await addDoc(collection(db, 'loadBoards'), newLoadBoard);
-      setNewLoadBoard({});
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error adding load board record:', err);
-      alert('Failed to add record. Please try again.');
-    }
+    const ok = validateForm<LoadBoard>(newLoadBoard, [
+      { field: 'facility', label: 'Facility', required: true },
+      { field: 'projectName', label: 'Project Name', required: true },
+    ], addToast);
+    if (!ok) return;
+    const success = await add(newLoadBoard);
+    if (success) { setNewLoadBoard({}); setEditingId(null); }
   };
 
   const handleUpdate = async (id: string, data: Partial<LoadBoard>) => {
     // Optimization: UI-first state reset for snappy user feedback
     const currentEditingId = editingId;
     setEditingId(null);
-    try {
-      await updateDoc(doc(db, 'loadBoards', id), data);
-    } catch (error) {
-      console.error("Error updating Load Board:", error);
-      setEditingId(currentEditingId);
-      alert("Failed to update Load Board record.");
-    }
+    const ok = await update(id, data);
+    if (!ok) setEditingId(currentEditingId);
   };
 
   const handleDelete = async () => {
     if (modal.id) {
-      try {
-        await deleteDoc(doc(db, 'loadBoards', modal.id));
-        setModal({ isOpen: false, id: null });
-      } catch (err) {
-        console.error('Error deleting load board record:', err);
-        alert('Failed to delete record. Please try again.');
-      }
+      const ok = await remove(modal.id);
+      if (ok) setModal({ isOpen: false, id: null });
     }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    await Promise.all(ids.map(id => remove(id)));
+    clearSelection();
   };
 
   const getUniqueValues = (key: keyof LoadBoard, currentFilters: any) => {
@@ -356,6 +375,18 @@ export default function LoadBoardInfo({
             >
               Clear
             </button>
+            <SavedViewsPanel
+              views={savedViews}
+              onSave={(name) => saveView(name, { filterProjectNames, filterLBNames, filterLBGroups, filterLocations })}
+              onApply={(filters) => {
+                const f = filters as any;
+                setFilterProjectNames(f.filterProjectNames ?? []);
+                setFilterLBNames(f.filterLBNames ?? []);
+                setFilterLBGroups(f.filterLBGroups ?? []);
+                setFilterLocations(f.filterLocations ?? []);
+              }}
+              onDelete={deleteView}
+            />
           </div>
           <div className="w-px h-4 bg-zinc-200 shrink-0"></div>
           <div className="flex flex-wrap items-center gap-2 px-1">
@@ -421,9 +452,19 @@ export default function LoadBoardInfo({
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
                   <tr className="bg-zinc-50/50">
+                    {isAdmin && (
+                      <th className="px-4 py-4 border-b border-zinc-100 w-10">
+                        <input
+                          type="checkbox"
+                          className="rounded border-zinc-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+                          checked={isAllSelected(filteredLoadBoards.slice(0, displayCount).map(x => x.id))}
+                          onChange={() => toggleAll(filteredLoadBoards.slice(0, displayCount).map(x => x.id))}
+                        />
+                      </th>
+                    )}
                     {columns.map((col, i) => (
-                      <th 
-                        key={col.key} 
+                      <th
+                        key={col.key}
                         className={cn("px-0 py-0 border-b border-zinc-100", i === 0 && "sticky left-0 bg-zinc-50/50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]")}
                       >
                         <div className="px-6 py-4 flex items-center cursor-pointer hover:bg-zinc-100/50 transition-colors" onClick={() => handleSort(col.key)}>
@@ -441,12 +482,13 @@ export default function LoadBoardInfo({
                 </thead>
                 <tbody className="divide-y divide-zinc-50">
                   {editingId === 'new' && (
-                    <motion.tr 
+                    <motion.tr
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       className="bg-zinc-50/30"
                     >
+                      {isAdmin && <td className="px-4 py-3 w-10" />}
                       {columns.map(col => (
                         <td key={col.key} className="px-6 py-3">
                           <input
@@ -478,6 +520,8 @@ export default function LoadBoardInfo({
                       setModal={setModal}
                       setSaveModal={setSaveModal}
                       onAddMaintenanceClick={(lb) => setMaintenanceModal({ isOpen: true, lb })}
+                      isSelected={selectedIds.has(lb.id)}
+                      onToggle={() => toggleOne(lb.id)}
                     />
                   ))}
                   {filteredLoadBoards.length > displayCount && (
@@ -561,11 +605,13 @@ export default function LoadBoardInfo({
         )}
       </AnimatePresence>
 
+      <BulkActionBar count={selectedIds.size} onDelete={handleBulkDelete} onClear={clearSelection} />
+
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {modal.isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
