@@ -5,7 +5,6 @@ import { Plus, Trash2, Edit2, Search, Check, X, Filter, ArrowUpDown, Download, C
 import { useExportExcel } from '../lib/useExportExcel';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { useTranslation } from 'react-i18next';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
@@ -56,8 +55,9 @@ const LifeTimeRow = React.memo(({
   isSelected: boolean,
   onToggle: () => void
 }) => {
+  const { t } = useTranslation();
   const [localData, setLocalData] = useState<Partial<LifeTime>>(record);
-  
+
   useEffect(() => {
     if (editingId !== record.id) {
       setLocalData(record);

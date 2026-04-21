@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { useCollectionCRUD } from '../lib/useCollectionCRUD';
 import { Plus, Trash2, Edit2, Check, X, Search, BarChart2, List, Filter, ArrowUpDown, Download, Copy } from 'lucide-react';
 import { useExportExcel } from '../lib/useExportExcel';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { useTranslation, Trans } from 'react-i18next';
 import { DoubleScrollbar } from './ui/DoubleScrollbar';
 import { MultiSelectDropdown } from './ui/MultiSelectDropdown';
 import { usePersistentState } from '../lib/usePersistentState';
@@ -61,8 +60,9 @@ const LoadBoardRow = React.memo(({
   isSelected: boolean,
   onToggle: () => void
 }) => {
+  const { t } = useTranslation();
   const [localData, setLocalData] = useState<Partial<LoadBoard>>(lb);
-  
+
   useEffect(() => {
     if (editingId !== lb.id) {
       setLocalData(lb);
