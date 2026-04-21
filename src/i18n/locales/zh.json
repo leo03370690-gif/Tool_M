@@ -441,5 +441,46 @@
       "lte0": "數量 <= 0",
       "columns": "顯示欄位"
     }
+  },
+  "analyticsDashboard": {
+    "title": "數據分析儀表板",
+    "subtitle": "故障趨勢與效能分析",
+    "monthly": "月度",
+    "weekly": "週度",
+    "filterByLB": "依負載板篩選",
+    "allLoadBoards": "全域（所有負載板）",
+    "failureTrend": "故障趨勢",
+    "allLBsLabel": "（所有負載板）",
+    "noRecords": "找不到符合條件的維修紀錄。",
+    "repairCases": "維修案例"
+  },
+  "maintenanceHistory": {
+    "title": "維修歷史記錄",
+    "subtitle": "負載板維修的完整日誌",
+    "addRecord": "新增紀錄",
+    "export": "匯出",
+    "clear": "清除"
+  },
+  "appearance": {
+    "title": "外觀設定",
+    "subtitle": "自訂您的工作區外觀",
+    "colorTheme": "色彩主題",
+    "sidebarStyle": "側欄樣式",
+    "lightDesc": "淺色側欄",
+    "darkDesc": "深色側欄",
+    "coloredDesc": "彩色側欄"
+  },
+  "dataManagement": {
+    "importTitle": "匯入資料",
+    "importSubtitle": "上傳 Excel 檔案以更新系統記錄",
+    "importMode": "匯入模式",
+    "autoDetect": "自動偵測工作表"
+  },
+  "userManagement": {
+    "addPersonnel": "新增人員",
+    "addPersonnelDesc": "建立具有特定角色的新使用者帳號",
+    "usernameLabel": "使用者名稱",
+    "emailOptional": "電子郵件（選填）",
+    "totalUsers": "總計：{{count}}"
   }
 }

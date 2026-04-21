@@ -734,15 +734,15 @@ export default function DataManagement() {
               <FileSpreadsheet className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-zinc-900">Import Data</h3>
-              <p className="text-sm text-zinc-500">Upload Excel files to update system records</p>
+              <h3 className="text-xl font-bold text-zinc-900">{t('dataManagement.importTitle')}</h3>
+              <p className="text-sm text-zinc-500">{t('dataManagement.importSubtitle')}</p>
             </div>
           </div>
 
           <div className="flex-1 space-y-6">
             <div className="space-y-3">
               <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-                Import Mode
+                {t('dataManagement.importMode')}
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label className={cn(
@@ -759,7 +759,7 @@ export default function DataManagement() {
                     onChange={() => setImportMode('auto' as 'auto' | 'specific')} 
                     className="sr-only" 
                   />
-                  Auto-Detect Sheets
+                  {t('dataManagement.autoDetect')}
                 </label>
                 <label className={cn(
                   "flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-bold transition-all",

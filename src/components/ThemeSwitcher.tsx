@@ -16,10 +16,10 @@ const COLOR_THEMES: { id: Theme; name: string; primary: string; accent: string; 
   { id: 'slate',   name: 'Slate',      primary: '#0f172a', accent: '#64748b', bg: '#f8fafc' },
 ];
 
-const SIDEBAR_STYLES: { id: SidebarStyle; nameKey: string; desc: string; sbBg: string; sbText: string; sbActive: string }[] = [
-  { id: 'light',   nameKey: 'theme.light',   desc: 'Light sidebar',   sbBg: '#ffffff',  sbText: '#a1a1aa', sbActive: '#f4f4f5' },
-  { id: 'dark',    nameKey: 'theme.dark',    desc: 'Dark sidebar',    sbBg: '#18181b',  sbText: '#71717a', sbActive: 'rgba(255,255,255,0.1)' },
-  { id: 'colored', nameKey: 'theme.colored', desc: 'Colored sidebar', sbBg: 'accent',   sbText: 'rgba(255,255,255,0.6)', sbActive: 'rgba(255,255,255,0.2)' },
+const SIDEBAR_STYLES: { id: SidebarStyle; nameKey: string; descKey: string; sbBg: string; sbText: string; sbActive: string }[] = [
+  { id: 'light',   nameKey: 'theme.light',   descKey: 'appearance.lightDesc',   sbBg: '#ffffff',  sbText: '#a1a1aa', sbActive: '#f4f4f5' },
+  { id: 'dark',    nameKey: 'theme.dark',    descKey: 'appearance.darkDesc',    sbBg: '#18181b',  sbText: '#71717a', sbActive: 'rgba(255,255,255,0.1)' },
+  { id: 'colored', nameKey: 'theme.colored', descKey: 'appearance.coloredDesc', sbBg: 'accent',   sbText: 'rgba(255,255,255,0.6)', sbActive: 'rgba(255,255,255,0.2)' },
 ];
 
 function MiniPreview({ primary, accent, bg, sbBg }: { primary: string; accent: string; bg: string; sbBg: string }) {
@@ -84,15 +84,15 @@ export function ThemeSwitcher() {
           <Palette className="h-6 w-6" />
         </div>
         <div>
-          <h3 className="text-xl font-bold text-zinc-900">Appearance</h3>
-          <p className="text-sm text-zinc-500">Customize the look and feel of your workspace</p>
+          <h3 className="text-xl font-bold text-zinc-900">{t('appearance.title')}</h3>
+          <p className="text-sm text-zinc-500">{t('appearance.subtitle')}</p>
         </div>
       </div>
 
       {/* Color Themes */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Color Theme</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{t('appearance.colorTheme')}</span>
           <div className="flex-1 h-px bg-zinc-100" />
           <span className="text-xs font-semibold text-zinc-500">{currentTheme.name}</span>
         </div>
@@ -151,7 +151,7 @@ export function ThemeSwitcher() {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <PanelLeft className="h-3.5 w-3.5 text-zinc-400" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Sidebar Style</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{t('appearance.sidebarStyle')}</span>
           <div className="flex-1 h-px bg-zinc-100" />
         </div>
         <div className="grid grid-cols-3 gap-3">
@@ -171,7 +171,7 @@ export function ThemeSwitcher() {
                 <SidebarPreview sbBg={s.sbBg} accent={accentColor} isSelected={sidebarStyle === s.id} />
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-xs font-bold text-zinc-700">{t(s.nameKey)}</span>
-                  <span className="text-[10px] text-zinc-400">{s.desc}</span>
+                  <span className="text-[10px] text-zinc-400">{t(s.descKey)}</span>
                 </div>
                 {sidebarStyle === s.id && (
                   <div className="absolute top-2 right-2 h-4 w-4 rounded-full bg-brand-primary flex items-center justify-center">

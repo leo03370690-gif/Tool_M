@@ -227,19 +227,19 @@ export default function UserManagement() {
               <UserPlus className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-bold text-zinc-900">Add New Personnel</h3>
-              <p className="text-xs text-zinc-500">Create a new user account with specific roles</p>
+              <h3 className="font-bold text-zinc-900">{t('userManagement.addPersonnel')}</h3>
+              <p className="text-xs text-zinc-500">{t('userManagement.addPersonnelDesc')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-zinc-600 shadow-sm border border-zinc-100">
             <Users className="h-3.5 w-3.5" />
-            <span>Total: {users.length}</span>
+            <span>{t('userManagement.totalUsers', { count: users.length })}</span>
           </div>
         </div>
 
         <form onSubmit={handleAddUser} className="grid grid-cols-1 gap-4 md:grid-cols-5">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Username</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">{t('userManagement.usernameLabel')}</label>
             <input
               type="text"
               placeholder="e.g. John.Doe"
@@ -250,7 +250,7 @@ export default function UserManagement() {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Email (Optional)</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">{t('userManagement.emailOptional')}</label>
             <input
               type="email"
               placeholder={`${newUsername.trim().toLowerCase().replace(/\s+/g, '.') || 'username'}@tooling.local`}

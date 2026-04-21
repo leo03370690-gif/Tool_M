@@ -441,5 +441,46 @@
       "lte0": "QTY <= 0",
       "columns": "Columns"
     }
+  },
+  "analyticsDashboard": {
+    "title": "Analytics Dashboard",
+    "subtitle": "Failure Trends and Performance",
+    "monthly": "Monthly",
+    "weekly": "Weekly",
+    "filterByLB": "Filter by Load Board",
+    "allLoadBoards": "Global (All Load Boards)",
+    "failureTrend": "Failure Trend",
+    "allLBsLabel": "(All Load Boards)",
+    "noRecords": "No maintenance records found for the selected criteria.",
+    "repairCases": "Repair Cases"
+  },
+  "maintenanceHistory": {
+    "title": "Maintenance History",
+    "subtitle": "Comprehensive logs of Load Board repairs",
+    "addRecord": "ADD RECORD",
+    "export": "EXPORT",
+    "clear": "Clear"
+  },
+  "appearance": {
+    "title": "Appearance",
+    "subtitle": "Customize the look and feel of your workspace",
+    "colorTheme": "Color Theme",
+    "sidebarStyle": "Sidebar Style",
+    "lightDesc": "Light sidebar",
+    "darkDesc": "Dark sidebar",
+    "coloredDesc": "Colored sidebar"
+  },
+  "dataManagement": {
+    "importTitle": "Import Data",
+    "importSubtitle": "Upload Excel files to update system records",
+    "importMode": "Import Mode",
+    "autoDetect": "Auto-Detect Sheets"
+  },
+  "userManagement": {
+    "addPersonnel": "Add New Personnel",
+    "addPersonnelDesc": "Create a new user account with specific roles",
+    "usernameLabel": "Username",
+    "emailOptional": "Email (Optional)",
+    "totalUsers": "Total: {{count}}"
   }
 }

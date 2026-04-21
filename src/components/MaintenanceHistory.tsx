@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { db } from '../firebase';
 import { deleteDoc, doc, updateDoc, collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { Trash2, Edit2, Check, X, Search, List, Filter, ArrowUpDown, History, Loader2, Plus, Download } from 'lucide-react';
@@ -173,6 +174,7 @@ export default function MaintenanceHistory({
   onAddMaintenanceRecord: () => void,
   onLBClick?: (lbNo: string) => void
 }) {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const { maintenanceRecords: allRecords, loading } = useData();
   
@@ -321,8 +323,8 @@ export default function MaintenanceHistory({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">Maintenance History</h2>
-          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">Comprehensive logs of Load Board repairs</p>
+          <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">{t('maintenanceHistory.title')}</h2>
+          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">{t('maintenanceHistory.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -331,14 +333,14 @@ export default function MaintenanceHistory({
             className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-black/10 transition-all hover:bg-zinc-800 hover:translate-y-[-2px] hover:shadow-xl active:translate-y-[0px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">EXPORT</span>
+            <span className="hidden sm:inline">{t('maintenanceHistory.export')}</span>
           </button>
           <button
             onClick={onAddMaintenanceRecord}
             className="flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-primary/20 transition-all hover:translate-y-[-2px] hover:shadow-xl active:translate-y-[0px]"
           >
             <Plus className="h-4 w-4" />
-            ADD RECORD
+            {t('maintenanceHistory.addRecord')}
           </button>
         </div>
       </div>
@@ -355,7 +357,7 @@ export default function MaintenanceHistory({
               }}
               className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors"
             >
-              Clear
+              {t('maintenanceHistory.clear')}
             </button>
           </div>
           <div className="w-px h-4 bg-zinc-200 shrink-0"></div>

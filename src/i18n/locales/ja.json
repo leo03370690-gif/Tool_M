@@ -441,5 +441,46 @@
       "lte0": "数量 <= 0",
       "columns": "列"
     }
+  },
+  "analyticsDashboard": {
+    "title": "分析ダッシュボード",
+    "subtitle": "故障トレンドとパフォーマンス分析",
+    "monthly": "月次",
+    "weekly": "週次",
+    "filterByLB": "ロードボードで絞り込む",
+    "allLoadBoards": "グローバル（全ロードボード）",
+    "failureTrend": "故障トレンド",
+    "allLBsLabel": "（全ロードボード）",
+    "noRecords": "選択した条件に一致するメンテナンス記録が見つかりません。",
+    "repairCases": "修理件数"
+  },
+  "maintenanceHistory": {
+    "title": "メンテナンス履歴",
+    "subtitle": "ロードボード修理の包括的なログ",
+    "addRecord": "記録追加",
+    "export": "エクスポート",
+    "clear": "クリア"
+  },
+  "appearance": {
+    "title": "外観設定",
+    "subtitle": "ワークスペースの外観をカスタマイズ",
+    "colorTheme": "カラーテーマ",
+    "sidebarStyle": "サイドバースタイル",
+    "lightDesc": "ライトサイドバー",
+    "darkDesc": "ダークサイドバー",
+    "coloredDesc": "カラーサイドバー"
+  },
+  "dataManagement": {
+    "importTitle": "データインポート",
+    "importSubtitle": "Excelファイルをアップロードしてシステムレコードを更新",
+    "importMode": "インポートモード",
+    "autoDetect": "シートを自動検出"
+  },
+  "userManagement": {
+    "addPersonnel": "人員追加",
+    "addPersonnelDesc": "特定のロールを持つ新しいユーザーアカウントを作成",
+    "usernameLabel": "ユーザー名",
+    "emailOptional": "メールアドレス（任意）",
+    "totalUsers": "合計：{{count}}"
   }
 }

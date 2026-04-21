@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Calendar, TrendingUp, Search, Filter } from 'lucide-react';
@@ -31,6 +32,7 @@ function getYearAndMonth(dateStr: string) {
 }
 
 export default function AnalyticsDashboard() {
+  const { t } = useTranslation();
   const { maintenanceRecords, loading } = useData();
   const [timeUnit, setTimeUnit] = useState<'monthly' | 'weekly'>('monthly');
   const [selectedLB, setSelectedLB] = useState<string>('all');
@@ -88,8 +90,8 @@ export default function AnalyticsDashboard() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">Analytics Dashboard</h2>
-          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">Failure Trends and Performance</p>
+          <h2 className="font-serif text-4xl italic text-zinc-900 tracking-tight">{t('analyticsDashboard.title')}</h2>
+          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em] font-bold">{t('analyticsDashboard.subtitle')}</p>
         </div>
       </div>
 
@@ -100,25 +102,25 @@ export default function AnalyticsDashboard() {
             onClick={() => setTimeUnit('monthly')}
             className={cn("px-4 py-2 rounded-lg text-sm font-bold transition-all", timeUnit === 'monthly' ? "bg-white text-brand-primary shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
           >
-            Monthly
+            {t('analyticsDashboard.monthly')}
           </button>
           <button
             onClick={() => setTimeUnit('weekly')}
             className={cn("px-4 py-2 rounded-lg text-sm font-bold transition-all", timeUnit === 'weekly' ? "bg-white text-brand-primary shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
           >
-            Weekly
+            {t('analyticsDashboard.weekly')}
           </button>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <div className="space-y-1.5 w-full sm:w-64">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Filter by Load Board</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{t('analyticsDashboard.filterByLB')}</label>
             <select
               value={selectedLB}
               onChange={(e) => setSelectedLB(e.target.value)}
               className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all"
             >
-              <option value="all">Global (All Load Boards)</option>
+              <option value="all">{t('analyticsDashboard.allLoadBoards')}</option>
               {uniqueLBs.map(lb => (
                 <option key={lb} value={lb}>{lb}</option>
               ))}
@@ -137,14 +139,14 @@ export default function AnalyticsDashboard() {
           <div className="flex items-center gap-2 mb-8">
             <TrendingUp className="h-5 w-5 text-brand-primary" />
             <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-widest">
-              {timeUnit === 'monthly' ? 'Monthly' : 'Weekly'} Failure Trend {selectedLB !== 'all' ? `- ${selectedLB}` : '(All Load Boards)'}
+              {t(timeUnit === 'monthly' ? 'analyticsDashboard.monthly' : 'analyticsDashboard.weekly')} {t('analyticsDashboard.failureTrend')} {selectedLB !== 'all' ? `- ${selectedLB}` : t('analyticsDashboard.allLBsLabel')}
             </h3>
           </div>
           
           {chartData.length === 0 ? (
             <div className="h-72 flex items-center justify-center flex-col gap-3 text-zinc-400">
               <Calendar className="h-8 w-8 opacity-20" />
-              <p className="text-sm">No maintenance records found for the selected criteria.</p>
+              <p className="text-sm">{t('analyticsDashboard.noRecords')}</p>
             </div>
           ) : (
             <div className="h-80 w-full">
@@ -175,7 +177,7 @@ export default function AnalyticsDashboard() {
                   />
                   <Bar 
                     dataKey="count" 
-                    name="Repair Cases" 
+                    name={t('analyticsDashboard.repairCases')}
                     fill="#18181b" 
                     radius={[6, 6, 0, 0]}
                     maxBarSize={60}

@@ -235,13 +235,15 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
 
   return (
     <div className="flex h-screen bg-bg-canvas font-sans text-brand-primary overflow-hidden">
-      <Suspense fallback={null}>
-        <CommandPalette
-          commands={paletteCommands}
-          isOpen={isPaletteOpen}
-          onClose={() => setIsPaletteOpen(false)}
-        />
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={null}>
+          <CommandPalette
+            commands={paletteCommands}
+            isOpen={isPaletteOpen}
+            onClose={() => setIsPaletteOpen(false)}
+          />
+        </Suspense>
+      </ErrorBoundary>
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
