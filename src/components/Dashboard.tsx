@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy, useMemo } from 'rea
 import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
 import ErrorBoundary from './ErrorBoundary';
+import LanguageSwitcher from './LanguageSwitcher';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { cn } from '../lib/utils';
