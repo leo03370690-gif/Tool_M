@@ -874,7 +874,7 @@ function DeviceDetailsModal({ device, products, onClose, onNavigate }: { device:
                                   <div className="flex items-start justify-between gap-2">
                                     <button 
                                       onClick={() => {
-                                        window.sessionStorage.setItem('socketInfo_filterSocketGroups', JSON.stringify([name]));
+                                        window.localStorage.setItem('socketInfo_filterSocketGroups', JSON.stringify([name]));
                                         onClose();
                                         onNavigate?.('socket');
                                       }}
@@ -894,7 +894,7 @@ function DeviceDetailsModal({ device, products, onClose, onNavigate }: { device:
                                             {lt.pogoPin1Pn ? (
                                               <button 
                                                 onClick={() => {
-                                                  window.sessionStorage.setItem('pogoPinInfo_filterPinPns', JSON.stringify([lt.pogoPin1Pn]));
+                                                  window.localStorage.setItem('pogoPinInfo_filterPinPns', JSON.stringify([lt.pogoPin1Pn]));
                                                   onClose();
                                                   onNavigate?.('pogo-pin');
                                                 }}
@@ -937,7 +937,7 @@ function DeviceDetailsModal({ device, products, onClose, onNavigate }: { device:
                                   <div className="flex items-start justify-between gap-2">
                                     <button 
                                       onClick={() => {
-                                        window.sessionStorage.setItem('socketInfo_filterSocketGroups', JSON.stringify([name]));
+                                        window.localStorage.setItem('socketInfo_filterSocketGroups', JSON.stringify([name]));
                                         onClose();
                                         onNavigate?.('socket');
                                       }}
@@ -957,7 +957,7 @@ function DeviceDetailsModal({ device, products, onClose, onNavigate }: { device:
                                             {lt.pogoPin1Pn ? (
                                               <button 
                                                 onClick={() => {
-                                                  window.sessionStorage.setItem('pogoPinInfo_filterPinPns', JSON.stringify([lt.pogoPin1Pn]));
+                                                  window.localStorage.setItem('pogoPinInfo_filterPinPns', JSON.stringify([lt.pogoPin1Pn]));
                                                   onClose();
                                                   onNavigate?.('pogo-pin');
                                                 }}
@@ -1003,7 +1003,7 @@ function DeviceDetailsModal({ device, products, onClose, onNavigate }: { device:
                                 <div key={`kit-${name}`} className="flex items-start justify-between gap-2 border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
                                   <button 
                                     onClick={() => {
-                                      window.sessionStorage.setItem('changeKitInfo_filterChangeKitGroups', JSON.stringify([name]));
+                                      window.localStorage.setItem('changeKitInfo_filterChangeKitGroups', JSON.stringify([name]));
                                       onClose();
                                       onNavigate?.('change-kit');
                                     }}
@@ -1035,7 +1035,7 @@ function DeviceDetailsModal({ device, products, onClose, onNavigate }: { device:
                                 <div key={`lb-${name}`} className="flex items-start justify-between gap-2 border-b border-zinc-100 pb-3 last:border-0 last:pb-0">
                                   <button 
                                     onClick={() => {
-                                      window.sessionStorage.setItem('lbInfo_filterLBGroups', JSON.stringify([name]));
+                                      window.localStorage.setItem('lbInfo_filterLBGroups', JSON.stringify([name]));
                                       onClose();
                                       onNavigate?.('load-board');
                                     }}

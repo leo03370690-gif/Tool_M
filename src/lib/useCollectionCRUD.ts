@@ -10,7 +10,9 @@ export function useCollectionCRUD<T extends Record<string, unknown>>(collectionN
 
   const add = useCallback(async (data: Partial<T>): Promise<boolean> => {
     try {
-      await addDoc(collection(db, collectionName), data);
+      // Strip the 'id' field — Firestore doc IDs must never be stored as a field
+      const { id: _id, ...cleanData } = data as Record<string, unknown>;
+      await addDoc(collection(db, collectionName), cleanData);
       return true;
     } catch (err) {
       console.error(`Error adding to ${collectionName}:`, err);
@@ -21,7 +23,9 @@ export function useCollectionCRUD<T extends Record<string, unknown>>(collectionN
 
   const update = useCallback(async (id: string, data: Partial<T>): Promise<boolean> => {
     try {
-      await updateDoc(doc(db, collectionName, id), data as Record<string, unknown>);
+      // Strip the 'id' field — Firestore doc IDs must never be stored as a field
+      const { id: _id, ...cleanData } = data as Record<string, unknown>;
+      await updateDoc(doc(db, collectionName, id), cleanData);
       return true;
     } catch (err) {
       console.error(`Error updating ${collectionName}:`, err);
