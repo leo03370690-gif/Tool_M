@@ -716,12 +716,11 @@ export default function DataManagement() {
           <AlertTriangle className="h-4 w-4" />
         </div>
         <div>
-          <h4 className="text-sm font-bold text-zinc-900">Firestore Free Tier Quota Notice</h4>
+          <h4 className="text-sm font-bold text-zinc-900">{t('dataManagement.quotaTitle')}</h4>
           <p className="text-xs text-zinc-500 leading-relaxed mt-1">
-            The Firebase free tier includes <strong>20,000 write operations per day</strong>. 
-            Large imports or clearing large collections will consume this quota. 
+            {t('dataManagement.quotaDesc')}
             <br />
-            <span className="font-semibold text-zinc-700">Current Status:</span> If you encounter "Quota limit exceeded", please wait 24 hours for the limit to reset.
+            <span className="font-semibold text-zinc-700">{t('dataManagement.quotaStatus')}</span> {t('dataManagement.quotaReset')}
           </p>
         </div>
       </div>
@@ -775,7 +774,7 @@ export default function DataManagement() {
                     onChange={() => setImportMode('specific' as 'auto' | 'specific')} 
                     className="sr-only" 
                   />
-                  Specific Page
+                  {t('dataManagement.specificPage')}
                 </label>
               </div>
             </div>
@@ -789,7 +788,7 @@ export default function DataManagement() {
                   className="space-y-2 overflow-hidden"
                 >
                   <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-                    Target Page
+                    {t('dataManagement.targetPage')}
                   </label>
                   <select
                     value={targetCollection}
@@ -806,7 +805,7 @@ export default function DataManagement() {
 
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-                Excel Files (.xlsx, .xls)
+                {t('dataManagement.excelFiles')}
               </label>
               <div className="relative group">
                 <input
@@ -819,7 +818,7 @@ export default function DataManagement() {
                 />
                 {!files && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-zinc-400 text-xs font-medium px-4 text-center">
-                    Drag and drop or click to select files
+                    {t('dataManagement.dragDrop')}
                   </div>
                 )}
               </div>
@@ -837,7 +836,7 @@ export default function DataManagement() {
 
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-                Facility Override (Optional)
+                {t('dataManagement.facilityOverride')}
               </label>
               <input
                 type="text"
@@ -861,7 +860,7 @@ export default function DataManagement() {
                 />
                 <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary shrink-0"></div>
                 <span className="ml-3 text-sm font-medium text-zinc-700">
-                  Clear existing data before importing
+                  {t('dataManagement.clearBeforeImport')}
                 </span>
               </label>
             </div>
@@ -872,7 +871,7 @@ export default function DataManagement() {
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-8 py-3 text-sm font-bold text-white transition-all hover:bg-zinc-800 disabled:opacity-50 shadow-lg shadow-brand-primary/20 active:scale-[0.98]"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {loading ? 'Processing...' : 'Start Import'}
+              {loading ? t('dataManagement.processing') : t('dataManagement.startImport')}
             </button>
           </div>
         </div>
@@ -884,8 +883,8 @@ export default function DataManagement() {
               <DatabaseBackup className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-zinc-900">Maintenance</h3>
-              <p className="text-sm text-zinc-500">Bulk delete records from system collections</p>
+              <h3 className="text-xl font-bold text-zinc-900">{t('dataManagement.maintenanceTitle')}</h3>
+              <p className="text-sm text-zinc-500">{t('dataManagement.maintenanceSubtitle')}</p>
             </div>
           </div>
 
@@ -893,14 +892,14 @@ export default function DataManagement() {
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-                  Target Section
+                  {t('dataManagement.targetSection')}
                 </label>
                 <select
                   value={maintenanceTarget}
                   onChange={(e) => setMaintenanceTarget(e.target.value)}
                   className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all appearance-none"
                 >
-                  <option value="all">⚠️ ALL SECTIONS</option>
+                  <option value="all">{t('dataManagement.allSections')}</option>
                   {COLLECTIONS.map(col => (
                     <option key={col.id} value={col.id}>{col.label}</option>
                   ))}
@@ -909,7 +908,7 @@ export default function DataManagement() {
 
               <div className="space-y-3">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-                  Action Type
+                  {t('dataManagement.actionType')}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <label className={cn(
@@ -926,23 +925,23 @@ export default function DataManagement() {
                       onChange={() => setMaintenanceAction('clear_all')} 
                       className="sr-only" 
                     />
-                    Clear Entire Section
+                    {t('dataManagement.clearEntireSection')}
                   </label>
                   <label className={cn(
                     "flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-bold transition-all",
-                    maintenanceAction === 'clear_facility' 
-                      ? "border-red-500 bg-red-50 text-red-700" 
+                    maintenanceAction === 'clear_facility'
+                      ? "border-red-500 bg-red-50 text-red-700"
                       : "border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
                   )}>
-                    <input 
-                      type="radio" 
-                      name="maintenanceAction" 
-                      value="clear_facility" 
-                      checked={maintenanceAction === 'clear_facility'} 
-                      onChange={() => setMaintenanceAction('clear_facility')} 
-                      className="sr-only" 
+                    <input
+                      type="radio"
+                      name="maintenanceAction"
+                      value="clear_facility"
+                      checked={maintenanceAction === 'clear_facility'}
+                      onChange={() => setMaintenanceAction('clear_facility')}
+                      className="sr-only"
                     />
-                    Delete by Facility
+                    {t('dataManagement.deleteByFacility')}
                   </label>
                 </div>
               </div>
@@ -956,13 +955,13 @@ export default function DataManagement() {
                     className="space-y-2 overflow-hidden"
                   >
                     <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">
-                      Facility Name
+                      {t('dataManagement.facilityName')}
                     </label>
                     <input
                       type="text"
                       value={deleteFacility}
                       onChange={(e) => setDeleteFacility(e.target.value)}
-                      placeholder="Enter Facility name..."
+                      placeholder={t('dataManagement.facilityPlaceholder')}
                       className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/10 hover:bg-zinc-50 transition-all"
                     />
                   </motion.div>
@@ -976,7 +975,7 @@ export default function DataManagement() {
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:opacity-50 shadow-lg shadow-red-600/20 active:scale-[0.98]"
                 >
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                  {loading ? 'Processing...' : (maintenanceAction === 'clear_all' ? 'Clear Section Data' : 'Delete Facility Data')}
+                  {loading ? t('dataManagement.processing') : (maintenanceAction === 'clear_all' ? t('dataManagement.clearSectionData') : t('dataManagement.deleteFacilityData'))}
                 </button>
               </div>
             </div>
@@ -984,7 +983,7 @@ export default function DataManagement() {
           
           <div className="mt-8 flex items-center gap-2 text-[10px] text-zinc-400 font-medium bg-zinc-50 p-3 rounded-lg">
             <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
-            <span>Warning: This action is destructive and cannot be undone. Always backup your data before clearing.</span>
+            <span>{t('dataManagement.warningDestructive')}</span>
           </div>
         </div>
       </div>
