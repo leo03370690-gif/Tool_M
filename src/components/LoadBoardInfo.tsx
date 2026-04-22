@@ -231,10 +231,12 @@ export default function LoadBoardInfo({
   };
 
   const handleUpdate = async (id: string, data: Partial<LoadBoard>) => {
-    // Optimization: UI-first state reset for snappy user feedback
+    const sanitized = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v != null ? String(v) : ''])
+    ) as Partial<LoadBoard>;
     const currentEditingId = editingId;
     setEditingId(null);
-    const ok = await update(id, data);
+    const ok = await update(id, sanitized);
     if (!ok) setEditingId(currentEditingId);
   };
 
@@ -249,7 +251,10 @@ export default function LoadBoardInfo({
 
   const handleDuplicate = async (item: LoadBoard) => {
     const { id: _id, ...data } = item as any;
-    const ok = await add(data as Partial<LoadBoard>);
+    const sanitized = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v != null ? String(v) : ''])
+    ) as Partial<LoadBoard>;
+    const ok = await add(sanitized);
     if (ok) addToast(t('info.recordCopied'), 'success');
   };
 

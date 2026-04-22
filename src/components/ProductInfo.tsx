@@ -234,7 +234,12 @@ export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: {
   };
 
   const handleUpdate = async (id: string, data: Partial<Product>) => {
-    const ok = await update(id, data);
+    // Firestore security rules use checkStringLength which requires string types.
+    // Old documents may have numeric fields — coerce everything to string before saving.
+    const sanitized = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v != null ? String(v) : ''])
+    ) as Partial<Product>;
+    const ok = await update(id, sanitized);
     if (ok) setEditingId(null);
   };
 
@@ -249,7 +254,10 @@ export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: {
 
   const handleDuplicate = async (item: Product) => {
     const { id: _id, ...data } = item as any;
-    const ok = await add(data as Partial<Product>);
+    const sanitized = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v != null ? String(v) : ''])
+    ) as Partial<Product>;
+    const ok = await add(sanitized);
     if (ok) addToast(t('info.recordCopied'), 'success');
   };
 

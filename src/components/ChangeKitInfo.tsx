@@ -211,7 +211,10 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
   };
 
   const handleUpdate = async (id: string, data: Partial<ChangeKit>) => {
-    const ok = await update(id, data);
+    const sanitized = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v != null ? String(v) : ''])
+    ) as Partial<ChangeKit>;
+    const ok = await update(id, sanitized);
     if (ok) setEditingId(null);
   };
 
@@ -225,7 +228,10 @@ export default function ChangeKitInfo({ isAdmin, selectedFacility }: { isAdmin: 
 
   const handleDuplicate = async (item: ChangeKit) => {
     const { id: _id, ...data } = item as any;
-    const ok = await add(data as Partial<ChangeKit>);
+    const sanitized = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v != null ? String(v) : ''])
+    ) as Partial<ChangeKit>;
+    const ok = await add(sanitized);
     if (ok) addToast(t('info.recordCopied'), 'success');
   };
 

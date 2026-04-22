@@ -209,7 +209,11 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
   };
 
   const handleUpdate = async (id: string, data: Partial<LifeTime>) => {
-    const ok = await update(id, data);
+    // isValidNumberOrString accepts strings too — safe to stringify all fields
+    const sanitized = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v != null ? String(v) : ''])
+    ) as Partial<LifeTime>;
+    const ok = await update(id, sanitized);
     if (ok) setEditingId(null);
   };
 
@@ -224,7 +228,10 @@ export default function LifeTimeInfo({ isAdmin, selectedFacility }: { isAdmin: b
 
   const handleDuplicate = async (item: LifeTime) => {
     const { id: _id, ...data } = item as any;
-    const ok = await add(data as Partial<LifeTime>);
+    const sanitized = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v != null ? String(v) : ''])
+    ) as Partial<LifeTime>;
+    const ok = await add(sanitized);
     if (ok) addToast(t('info.recordCopied'), 'success');
   };
 
