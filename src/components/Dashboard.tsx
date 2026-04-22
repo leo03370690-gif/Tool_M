@@ -360,6 +360,10 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
               </div>
             )}
           </div>
+          {/* Language switcher — show when sidebar expanded OR mobile drawer is open */}
+          {(isSidebarOpen || isMobileMenuOpen) && (
+            <LanguageSwitcher inline className="mb-2" />
+          )}
           <button
             onClick={handleLogout}
             style={{ color: 'var(--sb-logout)' }}
@@ -430,7 +434,7 @@ export default function Dashboard({ user, role, selectedFacility, onBackToFacili
           </div>
 
           <div className="flex items-center gap-4 md:gap-6">
-            <LanguageSwitcher className="hidden md:block" />
+            <LanguageSwitcher className="hidden md:block" />  {/* desktop header */}
             <button
               onClick={() => setIsPaletteOpen(true)}
               className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors text-xs"
