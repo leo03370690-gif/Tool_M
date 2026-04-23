@@ -166,10 +166,13 @@ export default function UserManagement() {
         headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid: deleteModal.id }),
       });
-      if (!resp.ok) throw new Error('Delete failed');
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.error || resp.statusText);
+      }
       setDeleteModal({ isOpen: false, id: null, username: null });
-    } catch (error) {
-      addToast('Failed to delete user. Please try again.', 'error');
+    } catch (error: any) {
+      addToast('Failed to delete user: ' + error.message, 'error');
     } finally {
       setDeletingId(null);
     }

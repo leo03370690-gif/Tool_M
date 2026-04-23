@@ -227,9 +227,15 @@ async function startServer() {
     if (!uid) return res.status(400).json({ error: "UID is required" });
 
     try {
-      // 1. Delete from Firebase Auth
-      await authAdmin.deleteUser(uid);
-      
+      // 1. Delete from Firebase Auth (best-effort — ignore user-not-found)
+      try {
+        await authAdmin.deleteUser(uid);
+      } catch (authErr: any) {
+        if (authErr.code !== 'auth/user-not-found') {
+          console.warn("Firebase Auth delete skipped:", authErr.message);
+        }
+      }
+
       // 2. Delete from Firestore
       await db.collection("users").doc(uid).delete();
 
