@@ -24,15 +24,24 @@ try {
   console.warn("Could not read firebase-applet-config.json, using default database");
 }
 
-// Initialize Firebase Admin
-admin.initializeApp({
-  projectId: "ai-studio-applet-webapp-78f12"
-});
+// Initialize Firebase Admin — prefer service account if provided
+const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+if (serviceAccountEnv) {
+  try {
+    const serviceAccount = JSON.parse(serviceAccountEnv);
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    console.log("Firebase Admin initialized with service account credentials");
+  } catch (e) {
+    console.warn("Failed to parse FIREBASE_SERVICE_ACCOUNT, falling back to ADC");
+    admin.initializeApp({ projectId: "ai-studio-applet-webapp-78f12" });
+  }
+} else {
+  admin.initializeApp({ projectId: "ai-studio-applet-webapp-78f12" });
+  console.log("Firebase Admin initialized with default credentials (ADC)");
+}
 
 const db = getFirestore(admin.app(), databaseId);
 const authAdmin = getAuth();
-
-console.log("Firebase Admin initialized with default credentials");
 
 async function startServer() {
   const app = express();
