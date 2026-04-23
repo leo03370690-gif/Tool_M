@@ -116,6 +116,7 @@ async function startServer() {
   // API to create a new user
   app.post("/api/create-user", verifyAdmin, async (req, res) => {
     const { username, email, password, role } = req.body;
+    const idToken = (req.headers.authorization as string).split("Bearer ")[1];
     if (!username || !email || !password || !role) {
       return res.status(400).json({ error: "Missing required fields" });
     }
@@ -128,15 +129,26 @@ async function startServer() {
         displayName: username,
       });
 
-      // 2. Create user document in Firestore
-      console.log("Attempting to create user document in Firestore for UID:", userRecord.uid);
-      await db.collection("users").doc(userRecord.uid).set({
-        username,
-        email,
-        role,
-        createdAt: new Date().toISOString()
+      // 2. Create Firestore document via REST API using caller's token
+      // (avoids Admin SDK IAM issues — caller's admin claim satisfies security rules)
+      const projectId = config.projectId || "ai-studio-applet-webapp-78f12";
+      const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${databaseId}/documents/users?documentId=${userRecord.uid}`;
+      const createResp = await fetch(firestoreUrl, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fields: {
+            username: { stringValue: username },
+            email: { stringValue: email },
+            role: { stringValue: role },
+            createdAt: { stringValue: new Date().toISOString() },
+          },
+        }),
       });
-      console.log("User document created successfully");
+      if (!createResp.ok) {
+        const errText = await createResp.text();
+        throw new Error(`Firestore create failed: ${createResp.status}: ${errText}`);
+      }
 
       res.json({ success: true, uid: userRecord.uid });
     } catch (error: any) {
@@ -189,6 +201,8 @@ async function startServer() {
       const decoded = await authAdmin.verifyIdToken(idToken);
       const { uid, role } = req.body || {};
 
+      const projectId = config.projectId || "ai-studio-applet-webapp-78f12";
+
       if (uid) {
         // Admin changing another user's role
         const callerEmail = (decoded.email || '').toLowerCase();
@@ -201,7 +215,13 @@ async function startServer() {
           return res.status(400).json({ error: 'Invalid role' });
         }
         await authAdmin.setCustomUserClaims(uid, { role });
-        await db.collection('users').doc(uid).update({ role });
+        // Update Firestore via REST API using caller's token
+        const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${databaseId}/documents/users/${uid}?updateMask.fieldPaths=role`;
+        await fetch(firestoreUrl, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${idToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: { role: { stringValue: role } } }),
+        });
         return res.json({ success: true });
       } else {
         // Self-claim on first login
@@ -209,17 +229,24 @@ async function startServer() {
         const assignRole = OWNER_EMAILS.includes(callerEmail) ? 'admin' : 'user';
         await authAdmin.setCustomUserClaims(decoded.uid, { role: assignRole });
         if (assignRole === 'admin') {
-          const ref = db.collection('users').doc(decoded.uid);
-          const snap = await ref.get();
-          if (!snap.exists) {
-            await ref.set({
-              username: 'Owner',
-              email: decoded.email || '',
-              role: 'admin',
-              createdAt: new Date().toISOString(),
+          // Check if owner document exists via REST API
+          const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${databaseId}/documents/users/${decoded.uid}`;
+          const checkResp = await fetch(firestoreUrl, { headers: { Authorization: `Bearer ${idToken}` } });
+          if (!checkResp.ok) {
+            // Document doesn't exist — create it
+            const createUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${databaseId}/documents/users?documentId=${decoded.uid}`;
+            await fetch(createUrl, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${idToken}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fields: {
+                  username: { stringValue: 'Owner' },
+                  email: { stringValue: decoded.email || '' },
+                  role: { stringValue: 'admin' },
+                  createdAt: { stringValue: new Date().toISOString() },
+                },
+              }),
             });
-          } else if (snap.data()?.role !== 'admin') {
-            await ref.update({ role: 'admin' });
           }
         }
         return res.json({ role: assignRole });
@@ -233,6 +260,7 @@ async function startServer() {
   // API to delete a user
   app.post("/api/delete-user", verifyAdmin, async (req, res) => {
     const { uid } = req.body;
+    const idToken = (req.headers.authorization as string).split("Bearer ")[1];
     if (!uid) return res.status(400).json({ error: "UID is required" });
 
     try {
@@ -245,8 +273,18 @@ async function startServer() {
         }
       }
 
-      // 2. Delete from Firestore
-      await db.collection("users").doc(uid).delete();
+      // 2. Delete Firestore document via REST API using caller's token
+      // (avoids Admin SDK IAM issues — caller's admin claim satisfies security rules)
+      const projectId = config.projectId || "ai-studio-applet-webapp-78f12";
+      const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${databaseId}/documents/users/${uid}`;
+      const deleteResp = await fetch(firestoreUrl, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      if (!deleteResp.ok && deleteResp.status !== 404) {
+        const errText = await deleteResp.text();
+        throw new Error(`Firestore delete failed: ${deleteResp.status}: ${errText}`);
+      }
 
       res.json({ success: true });
     } catch (error: any) {
