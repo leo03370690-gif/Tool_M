@@ -105,7 +105,7 @@ async function startServer() {
   };
 
   // API to create a new user
-  app.post("/api/admin/create-user", verifyAdmin, async (req, res) => {
+  app.post("/api/create-user", verifyAdmin, async (req, res) => {
     const { username, email, password, role } = req.body;
     if (!username || !email || !password || !role) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -168,8 +168,61 @@ async function startServer() {
     }
   });
 
+  // API to set or self-claim user role
+  const OWNER_EMAILS = ['leo03370690@gmail.com', 'leo.lo@tooling.local'];
+  app.post("/api/set-role", async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const idToken = authHeader.split("Bearer ")[1];
+    try {
+      const decoded = await authAdmin.verifyIdToken(idToken);
+      const { uid, role } = req.body || {};
+
+      if (uid) {
+        // Admin changing another user's role
+        const callerEmail = (decoded.email || '').toLowerCase();
+        const callerIsOwner = OWNER_EMAILS.includes(callerEmail);
+        const callerRole = (decoded as any).role;
+        if (!callerIsOwner && callerRole !== 'admin') {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+        if (!['admin', 'user'].includes(role || '')) {
+          return res.status(400).json({ error: 'Invalid role' });
+        }
+        await authAdmin.setCustomUserClaims(uid, { role });
+        await db.collection('users').doc(uid).update({ role });
+        return res.json({ success: true });
+      } else {
+        // Self-claim on first login
+        const callerEmail = (decoded.email || '').toLowerCase();
+        const assignRole = OWNER_EMAILS.includes(callerEmail) ? 'admin' : 'user';
+        await authAdmin.setCustomUserClaims(decoded.uid, { role: assignRole });
+        if (assignRole === 'admin') {
+          const ref = db.collection('users').doc(decoded.uid);
+          const snap = await ref.get();
+          if (!snap.exists) {
+            await ref.set({
+              username: 'Owner',
+              email: decoded.email || '',
+              role: 'admin',
+              createdAt: new Date().toISOString(),
+            });
+          } else if (snap.data()?.role !== 'admin') {
+            await ref.update({ role: 'admin' });
+          }
+        }
+        return res.json({ role: assignRole });
+      }
+    } catch (err: any) {
+      console.error("set-role error:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // API to delete a user
-  app.post("/api/admin/delete-user", verifyAdmin, async (req, res) => {
+  app.post("/api/delete-user", verifyAdmin, async (req, res) => {
     const { uid } = req.body;
     if (!uid) return res.status(400).json({ error: "UID is required" });
 
