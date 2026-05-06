@@ -505,6 +505,27 @@
     "addPersonnelDesc": "建立具有特定角色的新使用者帳號",
     "usernameLabel": "使用者名稱",
     "emailOptional": "電子郵件（選填）",
-    "totalUsers": "總計：{{count}}"
+    "totalUsers": "總計：{{count}}",
+    "password": "密碼",
+    "role": "角色",
+    "addUser": "新增使用者",
+    "adding": "新增中...",
+    "clearFilters": "清除篩選",
+    "allRoles": "所有角色",
+    "searchUsers": "搜尋使用者...",
+    "card": "卡片",
+    "table": "表格",
+    "showingUsers": "顯示 {{count}} / {{total}} 筆使用者。",
+    "loadMore": "載入更多"
+  },
+  "auditLogs": {
+    "title": "稽核日誌",
+    "subtitle": "監控系統活動與使用者操作",
+    "searchPlaceholder": "搜尋日誌...",
+    "colTime": "時間",
+    "colUser": "使用者",
+    "colAction": "操作",
+    "colDetails": "詳細資訊",
+    "noLogs": "找不到符合的日誌"
   }
 }
