@@ -468,7 +468,7 @@ export default function ProductInfo({ isAdmin, selectedFacility, onNavigate }: {
                 className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
               >
                 <Plus className="h-4 w-4" />
-                <span>ADD PRODUCT</span>
+                <span>{t('productInfo.addProduct')}</span>
               </button>
             )}
           </div>

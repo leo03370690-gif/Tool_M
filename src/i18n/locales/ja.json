@@ -505,6 +505,27 @@
     "addPersonnelDesc": "特定のロールを持つ新しいユーザーアカウントを作成",
     "usernameLabel": "ユーザー名",
     "emailOptional": "メールアドレス（任意）",
-    "totalUsers": "合計：{{count}}"
+    "totalUsers": "合計：{{count}}",
+    "password": "パスワード",
+    "role": "ロール",
+    "addUser": "ユーザー追加",
+    "adding": "追加中...",
+    "clearFilters": "フィルタークリア",
+    "allRoles": "全ロール",
+    "searchUsers": "ユーザーを検索...",
+    "card": "カード",
+    "table": "テーブル",
+    "showingUsers": "{{total}} 件中 {{count}} 件を表示中。",
+    "loadMore": "さらに読み込む"
+  },
+  "auditLogs": {
+    "title": "監査ログ",
+    "subtitle": "システムアクティビティとユーザーアクションを監視",
+    "searchPlaceholder": "ログを検索...",
+    "colTime": "時刻",
+    "colUser": "ユーザー",
+    "colAction": "アクション",
+    "colDetails": "詳細",
+    "noLogs": "一致するログが見つかりません"
   }
 }

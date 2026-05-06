@@ -505,6 +505,27 @@
     "addPersonnelDesc": "Create a new user account with specific roles",
     "usernameLabel": "Username",
     "emailOptional": "Email (Optional)",
-    "totalUsers": "Total: {{count}}"
+    "totalUsers": "Total: {{count}}",
+    "password": "Password",
+    "role": "Role",
+    "addUser": "Add User",
+    "adding": "Adding...",
+    "clearFilters": "Clear Filters",
+    "allRoles": "All Roles",
+    "searchUsers": "Search users...",
+    "card": "CARD",
+    "table": "TABLE",
+    "showingUsers": "Showing {{count}} of {{total}} users.",
+    "loadMore": "Load more"
+  },
+  "auditLogs": {
+    "title": "Audit Logs",
+    "subtitle": "Monitoring System Activity and User Actions",
+    "searchPlaceholder": "Search logs...",
+    "colTime": "Time",
+    "colUser": "User",
+    "colAction": "Action",
+    "colDetails": "Details",
+    "noLogs": "No matching logs found"
   }
 }
