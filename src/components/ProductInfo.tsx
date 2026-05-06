@@ -852,6 +852,15 @@ function DeviceDetailsModal({ device, products, onClose, onNavigate }: { device:
                   const socket2Names = Array.from(new Set(
                     insertionProducts.flatMap(p => (p.socketName2 || '').split(',').map(s => s.trim()).filter(Boolean))
                   ));
+
+                  const matchingSocket = socket1Names.length > 0
+                    ? socketsData.find(s => {
+                        const sGroups = (s.socketGroupPin1 || '').split(',').map((sg: string) => sg.trim());
+                        return socket1Names.some(name => sGroups.includes(name));
+                      })
+                    : undefined;
+                  const packageType = matchingSocket?.package;
+                  const packageSize = matchingSocket?.packageSize;
                   const kitGroups = new Set(
                     insertionProducts.flatMap(p => (p.changeKitGroup || '').split(',').map(s => s.trim()).filter(Boolean))
                   );
@@ -861,7 +870,23 @@ function DeviceDetailsModal({ device, products, onClose, onNavigate }: { device:
 
                   return (
                     <div key={insertion} className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5">
-                      <h4 className="mb-4 text-lg font-bold text-zinc-900">{insertion}</h4>
+                      <div className="flex items-center justify-between mb-4 gap-4">
+                        <h4 className="text-lg font-bold text-zinc-900">{insertion}</h4>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {packageType && (
+                            <div className="flex items-center gap-1 text-xs">
+                              <span className="text-zinc-400 font-medium uppercase tracking-wider">Package:</span>
+                              <span className="font-semibold text-zinc-700">{packageType}</span>
+                            </div>
+                          )}
+                          {packageSize && (
+                            <div className="flex items-center gap-1 text-xs">
+                              <span className="text-zinc-400 font-medium uppercase tracking-wider">Size:</span>
+                              <span className="font-semibold text-zinc-700">{packageSize}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-100">
                           <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3">Sockets</div>
